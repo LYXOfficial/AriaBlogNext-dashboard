@@ -16,7 +16,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.cn/css2?family=Noto+Serif+SC:wght@400..900&display=swap" rel="stylesheet"/>
       </head>
       <body>
-        <NextTopLoader color="var(--colorBrandBackground)" height={5}/>
+        <NextTopLoader color="#AC4068" height={5}/>
         <div id="web-bg"/>
         <FluentProvider theme={lightTheme}>
           {children}
