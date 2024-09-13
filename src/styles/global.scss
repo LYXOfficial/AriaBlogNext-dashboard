@@ -15,4 +15,8 @@
 }
 body{
     margin:0;
+    -webkit-tap-highlight-color: transparent;
+}
+.fui-DialogSurface{
+    max-width: min(calc(100vw - 20px),600px)!important;
 }

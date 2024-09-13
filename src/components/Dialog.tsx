@@ -1,4 +1,4 @@
-import { ReactElement } from "react";
+"use client";
 import {
     Dialog,
     DialogTrigger,
@@ -23,7 +23,7 @@ export const BaseDialog=(
     BaseDialogProps
 )=>{
     return (
-        <Dialog open={open}>
+        <Dialog open={open} onOpenChange={(_,data)=>data.open&&onClose()}>
             <DialogSurface>
                 <DialogBody>
                     <DialogTitle>{title}</DialogTitle>
@@ -34,7 +34,7 @@ export const BaseDialog=(
                         <DialogTrigger disableButtonEnhancement>
                             <Button appearance="secondary" onClick={onClose}>取消</Button>
                         </DialogTrigger>
-                            <Button appearance="primary" onClick={onConfirm}>确定</Button>
+                        <Button appearance="primary" onClick={onConfirm}>确定</Button>
                     </DialogActions>
                 </DialogBody>
             </DialogSurface>

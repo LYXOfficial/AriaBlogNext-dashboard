@@ -1,0 +1,94 @@
+@mixin flexbase{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 5px;
+}
+.fui-SearchBox{
+    margin-bottom: 10px;
+}
+#posts{
+    &-topbar{
+        @include flexbase;
+        white-space: nowrap;
+        &-count{
+            @include flexbase;
+        }
+        &-actions{
+            @include flexbase;
+            &>button{
+                margin-left:5px;
+                margin-bottom: 5px;
+            }
+        }
+        @media screen and (max-width:600px){
+            justify-content: center;
+            &-actions{
+                justify-content: center;
+            }
+        }
+    }
+    &-pagination{
+        @include flexbase;
+        margin-top:10px;
+        &-text{
+            margin-left:auto;
+        }
+    }
+    &-list{
+        overflow: auto;
+        position: relative;
+    }
+}
+.posts{
+    &-pagination{
+        &-pgbtn>.fui-Button{
+            min-width: 0!important;
+            margin-right:5px;
+        }
+        &-spec{
+            margin-right: 5px;
+        }
+    }
+    &-list{
+        &-item-title{
+            color:var(--colorNeutralForeground1);
+            text-decoration: none;
+            background: linear-gradient(rgb(255 51 184 / 5%), rgb(255 51 184 / 5%)) no-repeat bottom / 100% 30%;
+            font-weight: bold;
+            transition: .5s;
+            -webkit-transition: .5s;
+            -moz-transition: .5s;
+            -ms-transition: .5s;
+            -o-transition: .5s;
+            // white-space: pre-wrap;
+            &:hover{
+                background: linear-gradient(rgb(255 51 184 / 15%), rgb(255 51 184 / 15%)) no-repeat bottom / 100% 30%;
+            }
+        }
+        
+    }
+}
+.fui-Table{
+    table-layout: auto!important;
+    white-space: nowrap;
+    .fui-Button{
+        margin-left:5px;
+    }
+    &Cell{
+        height:36px!important;
+        &Layout__main{
+            text-overflow: ellipsis;
+            overflow: hidden;
+            max-width: calc(100vw - 160px);
+        }
+    }
+    &Header{
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--colorNeutralBackground1);
+        outline: var(--strokeWidthThin) solid var(--colorNeutralStroke2);
+    }
+}

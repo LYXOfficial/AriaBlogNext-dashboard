@@ -1,8 +1,15 @@
-.fui-MessageBar{
-    margin:0 auto;
-    margin-bottom:10px;
-    width: fit-content;
-    .fui-MessageBarBody{
-        white-space: pre-wrap;
+.fui-MessageBarGroup{
+    position: fixed;
+    top:10px;
+    width:100%;
+    left:10px;
+    height: auto;
+    z-index:999;
+    .fui-MessageBar{
+        margin:10px auto;
+        width: fit-content;
+        .fui-MessageBarBody{
+            white-space: pre-wrap;
+        }
     }
 }

@@ -4,6 +4,7 @@ import "@/styles/global.scss";
 import { lightTheme } from "@/utils/theme";
 import NextTopLoader from 'nextjs-toploader';
 
+process.env.TZ="Asia/Shanghai";
 export default function RootLayout({
   children,
 }: Readonly<{

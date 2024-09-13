@@ -6,9 +6,9 @@ import {
 } from "@fluentui/react-components";
 import "@/styles/login.scss";
 import { useRef,useState,useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "nextjs-toploader/app";
 import { config } from "@/dashboardConfig";
-import verifyToken from "@/utils/verifyToken";
+import verifyToken from "@/utils/access";
 import Messages from "@/components/Messages";
 import NoSSR from "@/components/NoSSR";
 
@@ -19,7 +19,7 @@ export default function Page(){
     const messageBarRef=useRef<any>(null);
     const [logining,setLogining]=useState(false);
     const router=useRouter();
-    useEffect(()=>{
+    useEffect(()=>{(async ()=>{
         const keydownHandler=(e:KeyboardEvent)=>{
             if(e.key==="Enter")
                 submitRef.current?.click();
@@ -32,8 +32,10 @@ export default function Page(){
             },1000);
         }
         return ()=>document.removeEventListener("keydown",keydownHandler);
-    },[]);
+    })()},[]);
     return (
+        <>
+        <Messages ref={messageBarRef}/>
         <NoSSR>
             <div id="login-container">
                 <Label size="large" id="login-title">登录<br/>AriaのBlog 管理</Label>
@@ -70,7 +72,7 @@ export default function Page(){
                                         if(data.message==="success"){
                                             localStorage.setItem("token",data.jwt);
                                             messageBarRef.current?.addMessage("消息","登录成功！跳转中...","success");
-                                            setTimeout(()=>router.push("/"),2000);
+                                            setTimeout(()=>router.push("/admin/overview"),2000);
                                         }
                                         else{
                                             messageBarRef.current?.addMessage("错误","登录失败，用户名或密码错误","error");
@@ -86,7 +88,7 @@ export default function Page(){
                         }>{logining?"登录中...":"登录！"}</Button>
                 </div>
             </div>
-            <Messages ref={messageBarRef}/>
         </NoSSR>
+        </>
     );
 }

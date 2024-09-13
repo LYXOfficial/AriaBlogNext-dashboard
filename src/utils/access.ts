@@ -12,3 +12,6 @@ export default function verifyToken(token:string|null):boolean{
     }
     return false;
 }
+export function exitLogin(){
+    window.localStorage.removeItem("token");
+}
