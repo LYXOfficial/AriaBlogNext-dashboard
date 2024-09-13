@@ -15,9 +15,11 @@ import {
     ImageRegular,
     SettingsRegular,
     CommentRegular,
+    ArrowExitRegular,
 } from "@fluentui/react-icons";
 import NoSSR from "@/components/NoSSR";
 import "@/styles/admin.scss";
+import { BaseDialog,BaseDialogProps } from "@/components/Dialog";
 
 declare interface TabItem{
     name:string;
@@ -25,6 +27,11 @@ declare interface TabItem{
     icon:ReactElement;
 }
 const tabs:TabItem[]=[
+    {
+        name: "登出",
+        link: "logout",
+        icon: <ArrowExitRegular/>
+    },
     {
         name: "总览",
         link: "/admin/overview",
@@ -61,16 +68,33 @@ const pages={
     "overview":<>
             <h1>总览·Ariasakaの小窝</h1>
         </>,
-    "posts":<></>,
-    "speaks":<></>,
-    "images":<></>,
-    "flinks":<></>,
-    "settings":<></>,
+    "posts":<>
+            <h1>文章</h1>
+        </>,
+    "speaks":<>
+            <h1>说说</h1>
+        </>,
+    "images":<>
+            <h1>图片管理</h1>
+        </>,
+    "flinks":<>
+            <h1>友链</h1>
+        </>,
+    "settings":<>
+            <h1>设置</h1>
+        </>,
 }
 
 export default function Page({params}:{params:{subpage:string}}){
     const router=useRouter();
     const messageBarRef=useRef<any>(null);
+    const [dialogState,setDialogState]=useState<BaseDialogProps>({
+        title:"",
+        content:<></>,
+        onConfirm:()=>{},
+        onClose:()=>{},
+        open:false,
+    });
     useEffect(()=>{
         if(!localStorage.getItem("token")){
             messageBarRef.current?.addMessage(
@@ -110,7 +134,39 @@ export default function Page({params}:{params:{subpage:string}}){
                                 id={tab.name}
                                 priority={tab.link===selectedTabLink?2:1}
                             >
-                                <Tab onClick={()=>router.push(tab.link)} value={tab.link} icon={<span>{tab.icon}</span>}>
+                                <Tab onClick={
+                                        ()=>{
+                                            if(tab.link=="logout"){
+                                                setDialogState({
+                                                    title:"注销",
+                                                    content:<>确定要退出登录吗？</>,
+                                                    open:true,
+                                                    onConfirm:()=>{
+                                                        setDialogState({
+                                                            ...dialogState,
+                                                            open:false
+                                                        });
+                                                        setSelectedTabLink(`/admin/${subpage}`);
+                                                        window.localStorage.removeItem("token");
+                                                        messageBar.current?.addMessage("提示","已注销","info");
+                                                        setTimeout(()=>router.push("/login"),1000);
+                                                    },
+                                                    onClose:()=>{
+                                                        setDialogState({
+                                                            ...dialogState,
+                                                            open:false
+                                                        });
+                                                        setSelectedTabLink(`/admin/${subpage}`);
+                                                    }
+                                                });
+                                            }
+                                            else
+                                                setTimeout(()=>router.push(tab.link),100);
+                                        }
+                                    } 
+                                    value={tab.link} 
+                                    icon={<span>{tab.icon}</span>}
+                                >
                                     {tab.name}
                                 </Tab>
                             </OverflowItem>
@@ -122,6 +178,13 @@ export default function Page({params}:{params:{subpage:string}}){
                     {pages[params.subpage as keyof typeof pages]}
                 </div>
                 <Messages ref={messageBarRef}/>
+                <BaseDialog 
+                    content={dialogState.content} 
+                    open={dialogState.open} 
+                    title={dialogState.title} 
+                    onConfirm={dialogState.onConfirm}
+                    onClose={dialogState.onClose}
+                />
             </div>
         </NoSSR>
     )
