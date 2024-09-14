@@ -31,13 +31,14 @@ import {
     useTableSort,
     TableColumnId,
     createTableColumn,
-    SearchBox
+    SearchBox,
+    Input
 } from "@fluentui/react-components";
 import Messages from "@/components/Messages";
 import Link from "next/link";
 import { Post } from "@/interfaces/post";
 import moment from "moment";
-import { BaseDialog,BaseDialogProps } from "@/components/Dialog";
+import { BaseDialog,BaseDialogProps, EditPostDialog, EditPostDialogProps } from "@/components/Dialog";
 import { refreshPostsCache, removePost } from "@/utils/posts";
 import { useRouter } from "nextjs-toploader/app";
 
@@ -73,6 +74,13 @@ export default function Overview(){
     const [dialogState,setDialogState]=useState<BaseDialogProps>({
         title:"",
         content:<></>,
+        onConfirm:()=>{},
+        onClose:()=>{},
+        open:false,
+    });
+    const [editPostDialogState,setEditPostDialogState]=useState<EditPostDialogProps>({
+        title:"",
+        post:{},
         onConfirm:()=>{},
         onClose:()=>{},
         open:false,
@@ -135,7 +143,7 @@ export default function Overview(){
                             }
                         }
                     >刷新缓存</Button>
-                    <Button appearance="secondary" icon={<ArrowSync16Filled/>} onClick={()=>{setUpdated(updated+1)}}>刷新列表</Button>
+                    <Button appearance="secondary" icon={<ArrowSync16Filled/>} onClick={()=>{setPosts([]);setUpdated(updated+1);}}>刷新列表</Button>
                     <Button appearance="primary" icon={<Add16Filled/>}>新建文章</Button>
                 </div>
             </div>
@@ -182,7 +190,32 @@ export default function Overview(){
                                 <TableCell>
                                     <TableCellLayout>
                                         <Button size="small" icon={<MarkdownRegular/>} title="进入编辑页"/>
-                                        <Button size="small" icon={<ComposeRegular/>} title="修改文章属性"/>
+                                        <Button 
+                                            size="small" 
+                                            icon={<ComposeRegular/>} 
+                                            title="修改文章属性"
+                                            onClick={
+                                                ()=>{
+                                                    setEditPostDialogState({
+                                                        open:true,
+                                                        title:"修改文章属性",
+                                                        post:post,
+                                                        onClose:()=>{
+                                                            setEditPostDialogState({
+                                                                ...editPostDialogState,
+                                                                open:false
+                                                            });
+                                                        },
+                                                        onConfirm:(post:Post)=>{
+                                                            setEditPostDialogState({
+                                                                ...editPostDialogState,
+                                                                open:false
+                                                            });
+                                                        }
+                                                    })
+                                                }
+                                            }
+                                        />
                                         <Button 
                                             size="small" 
                                             icon={<DeleteRegular/>} 
@@ -265,13 +298,8 @@ export default function Overview(){
                 </Link>:<></>}
                 <Label id="posts-pagination-text">{`20 条/页 共 ${postCount} 条`}</Label>
             </div>
-            <BaseDialog 
-                content={dialogState.content} 
-                open={dialogState.open} 
-                title={dialogState.title} 
-                onConfirm={dialogState.onConfirm}
-                onClose={dialogState.onClose}
-            />
+            <BaseDialog {...dialogState}/>
+            <EditPostDialog {...editPostDialogState} updated={updated}/>
             <Messages ref={messageBarRef}/>
         </>
     );

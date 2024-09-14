@@ -8,7 +8,6 @@ export declare interface Post{
     category?: string,
     plainContent?: string,
     mdContent?: string,
-    summary?: string,
     wordCount?: number,
     bannerImg?: string,
     cachedHtml?: string,

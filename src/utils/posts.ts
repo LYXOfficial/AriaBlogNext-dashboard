@@ -1,6 +1,11 @@
 import { config } from "@/dashboardConfig";
 import pushUpdateTime from "./siteinfo";
 
+export declare interface TagCategory{
+    name:string,
+    count:number
+}
+
 export async function refreshPostsCache(){
     try{await fetch(`${config.blogUrl}/refreshCache/posts`);}
     catch(e){}
@@ -29,5 +34,27 @@ export async function removePost(slug:string):Promise<boolean>{
     }
     catch(err){
         return false;
+    }
+}
+export async function getCategories():Promise<TagCategory[]>{
+    try{
+        const res=await fetch(`${config.backEndUrl}/get/category/categories`);
+        if(!res.ok) return [];
+        const data=await res.json();
+        return data.data;
+    }
+    catch(e){
+        return [];
+    }
+}
+export async function getTags():Promise<TagCategory[]>{
+    try{
+        const res=await fetch(`${config.backEndUrl}/get/tag/tags`);
+        if(!res.ok) return [];
+        const data=await res.json();
+        return data.data;
+    }
+    catch(e){
+        return [];
     }
 }

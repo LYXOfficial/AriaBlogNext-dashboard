@@ -61,3 +61,21 @@
         }
     }
 }
+#dialog-editpost .fui-DialogContent{
+    display: flex;
+    flex-direction: column;
+    &>.fui-Label{
+        margin:5px 0;
+    }
+}
+.combobox-tag{
+    list-style: none;
+    margin-right: 5px;
+    margin-top: 10px;
+    &list{
+        display: flex;
+        flex-wrap: wrap;
+        padding:0;
+        margin:0;
+    }
+}
