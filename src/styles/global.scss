@@ -5,6 +5,11 @@
     height: 100%;
     z-index:-1;
     background-image: url("/img/bg.svg");
+    @media(prefers-color-scheme: dark){
+        background-color: #212121;
+        color: gray;
+        background-image: url("/img/bg-dark.svg");
+    }
 }
 .fui-FluentProvider{
     background: none!important;

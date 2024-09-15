@@ -1,8 +1,9 @@
 "use client";
 import { FluentProvider } from '@fluentui/react-components';
 import "@/styles/global.scss";
-import { lightTheme } from "@/utils/theme";
+import { darkTheme, lightTheme } from "@/utils/theme";
 import NextTopLoader from 'nextjs-toploader';
+import { useState,useEffect } from 'react';
 
 process.env.TZ="Asia/Shanghai";
 export default function RootLayout({
@@ -10,6 +11,23 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [currentTheme,setCurrentTheme]=useState(lightTheme);
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    if(mediaQuery.matches)
+      setCurrentTheme(darkTheme);
+    else
+      setCurrentTheme(lightTheme);
+    const handleChange=(e:MediaQueryListEvent)=>{
+      if(e.matches)
+        setCurrentTheme(darkTheme);
+      else
+        setCurrentTheme(lightTheme);
+    };
+    mediaQuery.addEventListener("change", handleChange);
+    // 清除监听器
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
   return (
     <html lang="zh-cn">
       <head>
@@ -20,7 +38,7 @@ export default function RootLayout({
       <body>
         <NextTopLoader color="#AC4068" height={5}/>
         <div id="web-bg"/>
-        <FluentProvider theme={lightTheme}>
+        <FluentProvider theme={currentTheme}>
           {children}
         </FluentProvider>
       </body>

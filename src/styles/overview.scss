@@ -23,5 +23,8 @@
             flex-grow: 1;
             text-align: right;
         }
+        @media (prefers-color-scheme: dark){
+            background-color: rgb(83 83 83 / 69%);
+        }
     }
 }
