@@ -28,3 +28,49 @@ body{
 h1,h2,h3{
     font-family: "Noto Serif SC";
 }
+@media (prefers-color-scheme: dark){
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+        color: #070406;
+        background-color: #070406;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #585858;
+        border-radius: 100px;
+        transition: .3s;
+        -webkit-transition: .3s;
+        -moz-transition: .3s;
+        -ms-transition: .3s;
+        -o-transition: .3s;
+        &:hover{
+            background: #666666;
+        }
+    }
+    ::-webkit-scrollbar-corner {
+        display: block;  
+    }
+}
+@media (prefers-color-scheme: light) {
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+        color: #f0f0f0;
+        background-color: #f0f0f0;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #cccccc;
+        border-radius: 100px;
+        transition: .3s;
+        -webkit-transition: .3s;
+        -moz-transition: .3s;
+        -ms-transition: .3s;
+        -o-transition: .3s;
+        &:hover {
+            background: #b3b3b3;
+        }
+    }
+    ::-webkit-scrollbar-corner {
+        display: block;  
+    }
+}
