@@ -44,20 +44,26 @@
         }
     }
     &-leftbar{
-        min-width:200px;
         padding-right:10px;
         margin-top:20px;
         white-space: nowrap;
-        @media screen and (max-width: 600px){
-            & .fui-Tab__content,& .fui-Tab__content--reserved-space{
-                display: none;
+        width: min-content;
+        & .fui-Tab{
+            flex-direction: column;
+            display: flex;
+            padding: 5px 15px;
+            &__content{
+                font-size: 1em;
             }
-            & .fui-Tab{
-                width:min-content;
+            @media screen and (max-width: 600px){
+                padding:8px 10px;
+                &__content{
+                    display: none;
+                }
             }
-            &{
-                min-width: min-content;
-            }
+        }
+        & .fui-Tab__content--reserved-space{
+            display:none;
         }
     }
 }

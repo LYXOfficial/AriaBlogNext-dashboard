@@ -1,11 +1,6 @@
-"use client";
-import { useEffect } from "react";
-import { useRouter } from "nextjs-toploader/app";
+"use server";
+import { redirect } from "next/navigation";
 
-export default function Page(){
-    const router=useRouter();
-    useEffect(()=>{
-        router.push("/admin/overview");
-    },[]);
-    return <></>;
+export default async function Page(){
+    redirect("/admin/overview");
 }

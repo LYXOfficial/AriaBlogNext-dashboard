@@ -12,14 +12,37 @@ import { indent } from "@milkdown/kit/plugin/indent";
 import { upload } from "@milkdown/kit/plugin/upload";
 import { block } from "@milkdown/kit/plugin/block";
 import { math } from "@milkdown/plugin-math";
-import { menu, menuConfigCtx, MenuConfigItem } from '@aria-packs/plugin-menu';
 import { prism,prismConfig } from "@milkdown/plugin-prism";
 import 'prism-themes/themes/prism-nord.css';
 import 'katex/dist/katex.min.css';
 import "@aria-packs/plugin-menu/style.css"
 import "@/styles/milkdown.scss";
+import { useEffect } from 'react';
+import { Ctx } from '@milkdown/ctx';
+import { CmdKey } from '@milkdown/core';
 
-const menuItems: MenuConfigItem[][] = [
+type CommandPayload = unknown;
+type ButtonConfig<T = unknown> = {
+    type: 'button';
+    content: string | HTMLElement;
+    key: string | [string, CommandPayload] | [CmdKey<T>, T];
+    active?: (ctx: Ctx) => boolean;
+    disabled?: (ctx: Ctx) => boolean;
+};
+type SelectOptions = {
+    id: string | number;
+    content: string | HTMLElement;
+};
+type SelectConfig = {
+    type: 'select';
+    options: SelectOptions[];
+    text: string;
+    onSelect: (id: SelectOptions['id']) => [string, CommandPayload] | string;
+    disabled?: (ctx: Ctx) => boolean;
+};
+type MenuConfigItem = SelectConfig | ButtonConfig;
+
+const menuItems:MenuConfigItem[][]=[
   [
     {
       type: 'select',
@@ -53,7 +76,7 @@ const menuItems: MenuConfigItem[][] = [
     {
       type: 'button',
       content: `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16"><path fill="currentColor" d="M9.803 3.043a.5.5 0 0 1 .254.66l-4 9a.5.5 0 0 1-.914-.406l4-9a.5.5 0 0 1 .66-.254m-5.47 2.333a.5.5 0 0 1 .04.706L2.67 8l1.705 1.918a.5.5 0 1 1-.748.664l-2-2.25a.5.5 0 0 1 0-.664l2-2.25a.5.5 0 0 1 .706-.042m7.335 0a.5.5 0 0 1 .706.042l2 2.25a.5.5 0 0 1 0 .664l-2 2.25a.5.5 0 1 1-.748-.664L13.331 8l-1.705-1.918a.5.5 0 0 1 .042-.706"></path></svg>`,
-      key: 'ToggleCodeBlock',
+      key: 'CreateCodeBlock',
     },
   ],
 ]
@@ -64,12 +87,6 @@ const MilkdownEditor:React.FC=()=>{
   const { get }=useEditor((root)=>
     Editor.make()
       .config(nord)
-      .config((ctx)=>{
-        ctx.set(menuConfigCtx.key, {
-          attributes: { class: 'milkdown-menu', 'data-menu': 'true' },
-          items: menuItems,
-        })
-      })
       .config((ctx)=>{
         ctx.set(rootCtx, root);
       })
@@ -95,8 +112,19 @@ const MilkdownEditor:React.FC=()=>{
       .use(block)
       .use(math)
       .use(prism)
-      .use(menu)
   );
+  useEffect(()=>{
+    import("@aria-packs/plugin-menu").then(({menu, menuConfigCtx})=>
+      get()!
+        .config((ctx)=>{
+          ctx.set(menuConfigCtx.key, {
+            attributes: { class: 'milkdown-menu', 'data-menu': 'true' },
+            items: menuItems,
+          })
+        })
+        .use(menu)
+    )
+  },[]);
   return <Milkdown />;
 };
 
