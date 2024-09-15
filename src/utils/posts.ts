@@ -1,5 +1,7 @@
 import { config } from "@/dashboardConfig";
 import pushUpdateTime from "./siteinfo";
+import { Post } from "@/interfaces/post";
+import moment from "moment";
 
 export declare interface TagCategory{
     name:string,
@@ -56,5 +58,89 @@ export async function getTags():Promise<TagCategory[]>{
     }
     catch(e){
         return [];
+    }
+}
+export async function updatePostInfo(post:Post):Promise<boolean>{
+    try{
+        const res=await fetch(`${config.backEndUrl}/update/post/updatePostInfo`, {
+            method: 'PUT',
+            headers:{
+                'Content-Type': 'application/json',
+            },
+            body:JSON.stringify({
+                ...post,
+                lastUpdatedTime:moment().unix(),
+                token: localStorage.getItem('token'),
+            })
+        });
+        refreshPostsCache();
+        refreshPostCache(post.slug!);
+        pushUpdateTime();
+        if(res.ok) return true;
+        else return false;
+    }
+    catch(err){
+        return false;
+    }
+}
+export async function removeDraft(slug:string):Promise<boolean>{
+    try{
+        const res=await fetch(`${config.backEndUrl}/update/draft/deleteDraft`, {
+            method: 'DELETE',
+            headers:{
+                'Content-Type': 'application/json',
+            },
+            body:JSON.stringify({
+                slug: slug,
+                token: localStorage.getItem('token'),
+            })
+        });
+        if(res.ok) return true;
+        else return false;
+    }
+    catch(err){
+        return false;
+    }
+}
+export async function updateDraftInfo(post:Post):Promise<boolean>{
+    try{
+        const res=await fetch(`${config.backEndUrl}/update/draft/updateDraftInfo`, {
+            method: 'PUT',
+            headers:{
+                'Content-Type': 'application/json',
+            },
+            body:JSON.stringify({
+                ...post,
+                lastUpdatedTime:moment().unix(),
+                token: localStorage.getItem('token'),
+            })
+        });
+        if(res.ok) return true;
+        else return false;
+    }
+    catch(err){
+        return false;
+    }
+}
+
+export async function getPostBySlug(slug:string):Promise<Post>{
+    try{
+        const res=await fetch(`${config.backEndUrl}/get/post/postBySlug?slug=${slug}`);
+        if(!res.ok) return {};
+        const data=await res.json();
+        return data.data;
+    }
+    catch(err){
+        return {};
+    }
+}
+export async function getDraftBySlug(slug:string):Promise<Post>{
+    try{
+        const res=await fetch(`${config.backEndUrl}/get/draft/draftBySlug?slug=${slug}`);
+        const data=await res.json();
+        return data.data;
+    }
+    catch(err){
+        return {};
     }
 }

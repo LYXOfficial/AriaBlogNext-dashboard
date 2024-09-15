@@ -20,18 +20,18 @@ const myTheme: BrandVariants={
 };
 export const lightTheme:Theme={
   ...createLightTheme(myTheme),
-  fontWeightRegular:600,
-  fontFamilyBase:"Noto Serif SC",
-  fontWeightSemibold:800,
-  fontWeightMedium:700,
-  fontWeightBold:900,
+  // fontWeightRegular:600,
+  fontFamilyBase:"Noto Sans SC",
+  // fontWeightSemibold:800,
+  // fontWeightMedium:700,
+  // fontWeightBold:900,
 };
 
 export const darkTheme:Theme={
   ...createDarkTheme(myTheme),
-  fontWeightRegular:600,
-  fontFamilyBase:"Noto Serif SC",
-  fontWeightSemibold:800,
-  fontWeightMedium:700,
-  fontWeightBold:900
+  // fontWeightRegular:600,
+  fontFamilyBase:"Noto Sans SC",
+  // fontWeightSemibold:800,
+  // fontWeightMedium:700,
+  // fontWeightBold:900
 };

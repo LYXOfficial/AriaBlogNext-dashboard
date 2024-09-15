@@ -211,7 +211,7 @@ export const EditPostDialog=(
               <DialogTrigger disableButtonEnhancement>
                 <Button appearance="secondary" onClick={onClose}>取消</Button>
               </DialogTrigger>
-              <Button appearance="primary" type="submit">确定</Button>
+              <Button appearance="primary" type="submit">保存</Button>
             </DialogActions>
           </DialogBody>
         </form>

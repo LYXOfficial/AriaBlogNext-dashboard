@@ -9,6 +9,8 @@ import {
   Comment24Regular,
   CommentMultiple24Regular,
   Link24Regular,
+  Archive24Regular,
+  Chat24Regular,
 } from "@fluentui/react-icons";
 
 export default function Overview(){
@@ -18,32 +20,39 @@ export default function Overview(){
   const [speaksCount,setSpeaksCount]=useState<number>(-1);
   const [flinkCount,setFlinkCount]=useState<number>(-1);
   const [commentCount,setCommentCount]=useState<number>(-1);
+  const [draftCount,setDraftCount]=useState<number>(-1);
   useEffect(()=>{(async ()=>{
-    fetch(`${config.backEndUrl}/get/post/postCount`,{cache:"no-store"})
+    fetch(`${config.backEndUrl}/get/post/postCount`)
       .then(async res=>{
         if(res.ok){
           setPostCount((await res.json()).count);
         }
       });
-    fetch(`${config.backEndUrl}/get/category/categoryCount`,{cache:"no-store"})
+    fetch(`${config.backEndUrl}/get/category/categoryCount`)
       .then(async res=>{
         if(res.ok){
           setCategoryCount((await res.json()).count);
         }
       })
-    fetch(`${config.backEndUrl}/get/tag/tagCount`,{cache:"no-store"})
+    fetch(`${config.backEndUrl}/get/tag/tagCount`)
       .then(async res=>{
         if(res.ok){
           setTagCount((await res.json()).count);
         }
       })
-    fetch(`${config.backEndUrl}/get/speaks/speaksCount`,{cache:"no-store"})
+    fetch(`${config.backEndUrl}/get/draft/draftCount`)
+      .then(async res=>{
+        if(res.ok){
+          setDraftCount((await res.json()).count);
+        }
+      })
+    fetch(`${config.backEndUrl}/get/speaks/speaksCount`)
       .then(async res=>{
         if(res.ok){
           setSpeaksCount((await res.json()).count);
         }
       })
-    fetch(`${config.backEndUrl}/get/flink/flinkCount`,{cache:"no-store"})
+    fetch(`${config.backEndUrl}/get/flink/flinkCount`)
       .then(async res=>{
         if(res.ok){
           setFlinkCount((await res.json()).count);
@@ -69,13 +78,18 @@ export default function Overview(){
           <span className="overview-count-title">标签</span>
           <span className="overview-count-value">{tagCount==-1?"...":tagCount}</span>
         </div>
+        <div className="overview-count drafts">
+          <Archive24Regular className="overview-count-icon"/>
+          <span className="overview-count-title">草稿</span>
+          <span className="overview-count-value">{draftCount==-1?"...":draftCount}</span>
+        </div>
         <div className="overview-count speaks">
-          <Comment24Regular className="overview-count-icon"/>
+          <Chat24Regular className="overview-count-icon"/>
           <span className="overview-count-title">哔哔</span>
           <span className="overview-count-value">{speaksCount==-1?"...":speaksCount}</span>
         </div>
         <div className="overview-count comments">
-          <CommentMultiple24Regular className="overview-count-icon"/>
+          <Comment24Regular className="overview-count-icon"/>
           <span className="overview-count-title">评论</span>
           <span className="overview-count-value">{commentCount==-1?"...":commentCount}</span>
         </div>

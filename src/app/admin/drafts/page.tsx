@@ -15,7 +15,7 @@ import {
   MarkdownRegular,
   DeleteRegular,
   ComposeRegular,
-  ArchiveRegular,
+  DocumentRegular,
 } from "@fluentui/react-icons";
 import {
   Button,
@@ -39,7 +39,7 @@ import Link from "next/link";
 import { Post } from "@/interfaces/post";
 import moment from "moment";
 import { BaseDialog,BaseDialogProps, EditPostDialog, EditPostDialogProps } from "@/components/Dialog";
-import { refreshPostsCache, removePost, updatePostInfo } from "@/utils/posts";
+import { removeDraft, updateDraftInfo } from "@/utils/posts";
 import { useRouter } from "nextjs-toploader/app";
 
 const columns:TableColumnDefinition<Post>[]=[
@@ -61,7 +61,7 @@ const columns:TableColumnDefinition<Post>[]=[
   }),
 ];
 
-export default function Posts(){
+export default function Drafts(){
   const [postCount,setPostCount]=useState<number>(-1);
   const [posts,setPosts]=useState<Post[]>([]);
   const [updated,setUpdated]=useState<number>(0);
@@ -96,59 +96,37 @@ export default function Posts(){
   const rows=sort(getRows());
   useEffect(()=>{
     (async ()=>{
-      const postCountRes=await fetch(`${config.backEndUrl}/get/post/searchPostsByTitleCount?title=${query}`);
+      const postCountRes=await fetch(`${config.backEndUrl}/get/draft/searchDraftsByTitleCount?title=${query}`);
       if(postCountRes.ok) setPostCount((await postCountRes.json()).count);
       const startl=(page-1)*20,endl=page*20;
-      const postsRes=await fetch(`${config.backEndUrl}/get/post/searchPostsByTitle?startl=${startl}&endl=${endl}&title=${query}`);
+      const postsRes=await fetch(`${config.backEndUrl}/get/draft/searchDraftsByTitle?startl=${startl}&endl=${endl}&title=${query}`);
       if(postsRes.ok) setPosts((await postsRes.json()).data);
     })();
   },[page,updated,query]);
   return (
     <>
-      <h2>文章管理</h2>
+      <h2>草稿箱</h2>
       <SearchBox placeholder="搜索..." onKeyDown={
         (e)=>{
           if(e.key=="Enter"){
             e.preventDefault();
             if(e.currentTarget.value.trim()!=query)
-              router.push(`/admin/posts/?query=${e.currentTarget.value.trim()}&page=1`);
+              router.push(`/admin/drafts/?query=${e.currentTarget.value.trim()}&page=1`);
           }
         }
       }/>
       <div id="posts-topbar">
         <div id="posts-topbar-count">
           <Document20Filled/>
-          <Label size="large">{postCount==-1?"...":postCount} 篇文章</Label>
+          <Label size="large">{postCount==-1?"...":postCount} 篇草稿</Label>
         </div>
         <div id="posts-topbar-actions">
-          {/* <Button 
-            appearance="secondary" 
-            icon={<ArrowSync16Filled/>}
-            onClick={
-              ()=>{
-                setDialogState({
-                  title:"重置缓存",
-                  content:"将强制刷新博客文章索引的缓存，在文章更新后首页显示异常时可以尝试，刷新后首次访问博客将会变慢",
-                  open:true,
-                  onConfirm:()=>{
-                    setDialogState({...dialogState,open:false});
-                    refreshPostsCache().then(()=>{
-                      messageBarRef.current?.addMessage("提示","文章缓存刷新成功","success");
-                    });
-                  },
-                  onClose:()=>{
-                    setDialogState({...dialogState,open:false});
-                  }
-                })
-              }
-            }
-          >刷新缓存</Button> */}
           <Button appearance="secondary" icon={<ArrowSync16Filled/>} onClick={()=>{setPosts([]);setUpdated(updated+1);}}>刷新列表</Button>
           <Button appearance="primary" icon={<Add16Filled/>}>新建文章</Button>
         </div>
       </div>
       <div id="posts-list">
-        <Table sortable aria-label="文章列表">
+        <Table sortable aria-label="草稿列表">
           <TableHeader>
             <TableRow>
               <TableHeaderCell {...headerSortProps('title')}><Markdown20Filled/>标题</TableHeaderCell>
@@ -164,7 +142,7 @@ export default function Posts(){
                 <TableCell>
                   <TableCellLayout>
                     <Link 
-                      href={`/admin/posts/edit?slug=${post.slug}&type=post`} 
+                      href={`/admin/posts/edit?slug=${post.slug}&type=draft`} 
                       className="posts-list-item-title"
                       dangerouslySetInnerHTML={{
                           __html: post.title!.replace(eval(`/${query}/gi`),
@@ -189,25 +167,25 @@ export default function Posts(){
                 </TableCell>
                 <TableCell>
                   <TableCellLayout>
-                  <Button 
+                    <Button 
                       size="small" 
                       icon={<MarkdownRegular/>} 
                       title="进入编辑页"
                       onClick={
                         ()=>{
-                          router.push(`/admin/posts/edit/?slug=${post.slug}&type=post`)
+                          router.push(`/admin/posts/edit/?slug=${post.slug}&type=draft`)
                         }
                       }
                     />
                     <Button 
                       size="small" 
                       icon={<ComposeRegular/>} 
-                      title="修改文章属性"
+                      title="修改草稿属性"
                       onClick={
                         ()=>{
                           setEditPostDialogState({
                             open:true,
-                            title:"修改文章属性",
+                            title:"修改草稿属性",
                             post:post,
                             onClose:()=>{
                               setEditPostDialogState({
@@ -221,7 +199,7 @@ export default function Posts(){
                                 open:false
                               });
                               if(postn!=post)
-                                updatePostInfo(postn).then((res)=>{
+                                updateDraftInfo(postn).then((res)=>{
                                   if(res){
                                     messageBarRef.current?.addMessage("提示","修改成功","success");
                                     setUpdated(updated+1);
@@ -235,13 +213,12 @@ export default function Posts(){
                     />
                     <Button 
                       size="small"
-                      icon={<ArchiveRegular/>}
-                      title="移至草稿箱"
-                      style={{color:"orange"}}
+                      icon={<DocumentRegular/>}
+                      title="正式发布"
                       onClick={()=>{
                         setDialogState({
                           title:"提示",
-                          content:"确定将此文章移至草稿箱吗？",
+                          content:"确定将此草稿发布吗？",
                           open:true,
                           onConfirm:()=>{
                             setDialogState({
@@ -258,28 +235,28 @@ export default function Posts(){
                         })
                       }}
                     />
-                    {/* <Button 
+                    <Button 
                       size="small" 
-                      icon={<DeleteRegular/>} 
-                      title="删除文章" 
-                      color="danger" 
+                      icon={<DeleteRegular/>}
+                      title="删除草稿"
+                      color="danger"
                       style={{color:"red"}}
                       onClick={()=>{
                         setDialogState({
                           open:true,
-                          title:"删除文章",
-                          content:<>确定要删除这篇文章吗？<br/><strong>{post.title}</strong></>,
+                          title:"删除草稿",
+                          content:<>确定要删除这篇草稿吗？<br/><strong>{post.title}</strong></>,
                           onConfirm:()=>{
                             setDialogState({
                               open:true,
                               title:"二次确认",
-                              content:<>确定要删除这篇文章吗？<br/><strong>{post.title}</strong><br/><br/><br/>文章将被永久删除（真的很久！！！）</>,
+                              content:<>确定要删除这篇草稿吗？<br/><strong>{post.title}</strong><br/><br/><br/>草稿将被永久删除（真的很久！！！）</>,
                               onConfirm:()=>{
                                 setDialogState({
                                   ...dialogState,
                                   open:false
                                 });
-                                removePost(post.slug!).then((e)=>{
+                                removeDraft(post.slug!).then((e)=>{
                                   if(e){
                                     messageBarRef.current?.addMessage(
                                       "提示","删除成功","success"
@@ -309,7 +286,7 @@ export default function Posts(){
                           }
                         });
                       }}
-                    /> */}
+                    />
                   </TableCellLayout>
                 </TableCell>
               </TableRow>
@@ -318,21 +295,21 @@ export default function Posts(){
         </Table>
       </div>
       <div id="posts-pagination">
-        {page-2>0?<Link className="posts-pagination-pgbtn" href={`/admin/posts?page=1&query=${query}`}>
+        {page-2>0?<Link className="posts-pagination-pgbtn" href={`/admin/drafts?page=1&query=${query}`}>
           <Button appearance="secondary" shape="circular">1</Button>
         </Link>:<></>}
         {page-3>0?<Label className="posts-pagination-spec">...</Label>:<></>}
-        {page-1>0?<Link className="posts-pagination-pgbtn" href={`/admin/posts?page=${page-1}&query=${query}`}>
+        {page-1>0?<Link className="posts-pagination-pgbtn" href={`/admin/drafts?page=${page-1}&query=${query}`}>
           <Button appearance="secondary" shape="circular">{page-1}</Button>
         </Link>:<></>}
-        <Link className="posts-pagination-pgbtn current" href={`/admin/posts?page=${page}&query=${query}`}>
+        <Link className="posts-pagination-pgbtn current" href={`/admin/drafts?page=${page}&query=${query}`}>
           <Button appearance="primary" shape="circular">{page}</Button>
         </Link>
-        {page+1<=maxPage?<Link className="posts-pagination-pgbtn" href={`/admin/posts?page=${page+1}&query=${query}`}>
+        {page+1<=maxPage?<Link className="posts-pagination-pgbtn" href={`/admin/drafts?page=${page+1}&query=${query}`}>
           <Button appearance="secondary" shape="circular">{page+1}</Button>
         </Link>:<></>}
         {page+3<=maxPage?<Label className="posts-pagination-spec">...</Label>:<></>}
-        {page+2<=maxPage?<Link className="posts-pagination-pgbtn" href={`/admin/posts?page=${maxPage}&query=${query}`}>
+        {page+2<=maxPage?<Link className="posts-pagination-pgbtn" href={`/admin/drafts?page=${maxPage}&query=${query}`}>
           <Button appearance="secondary" shape="circular">{maxPage}</Button>
         </Link>:<></>}
         <Label id="posts-pagination-text">{`20 条/页 共 ${postCount} 条`}</Label>

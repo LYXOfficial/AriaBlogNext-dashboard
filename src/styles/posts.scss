@@ -22,10 +22,13 @@
                 margin-bottom: 5px;
             }
         }
-        @media screen and (max-width:600px){
+        @media screen and (max-width:400px){
             justify-content: center;
             &-actions{
-                justify-content: center;
+                width: 100%;
+            }
+            .fui-Button{
+                width: calc(50% - 5px);
             }
         }
     }
@@ -56,7 +59,7 @@
             color:var(--colorNeutralForeground1);
             text-decoration: none;
             background: linear-gradient(rgb(255 51 184 / 5%), rgb(255 51 184 / 5%)) no-repeat bottom / 100% 30%;
-            font-weight: bold;
+            font-weight: 500;
             transition: .5s;
             -webkit-transition: .5s;
             -moz-transition: .5s;

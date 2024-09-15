@@ -23,7 +23,8 @@ import {
   SettingsRegular,
   CommentRegular,
   ArrowExitRegular,
-  CommentMultipleRegular,
+  ChartMultipleRegular,
+  ChatRegular,
 } from "@fluentui/react-icons";
 import NoSSR from "@/components/NoSSR";
 import "@/styles/admin.scss";
@@ -43,7 +44,7 @@ const tabs:TabItem[]=[
   {
     name: "总览",
     link: "/admin/overview",
-    icon: <ArchiveRegular/>
+    icon: <ChartMultipleRegular/>
   },
   {
     name: "博文",
@@ -51,14 +52,19 @@ const tabs:TabItem[]=[
     icon: <DocumentRegular/>
   },
   {
+    name: "草稿",
+    link: "/admin/drafts",
+    icon: <ArchiveRegular/>
+  },
+  {
     name: "说说",
     link: "/admin/speaks",
-    icon: <CommentRegular/>
+    icon: <ChatRegular/>
   },
   {
     name: "评论",
     link: "/admin/comments",
-    icon: <CommentMultipleRegular/>
+    icon: <CommentRegular/>
   },
   {
     name: "图床",
@@ -84,6 +90,7 @@ export default function Page({
   const router=useRouter();
   const path=usePathname();
   const messageBarRef=useRef<any>(null);
+  const [selectedTabLink,setSelectedTabLink]=useState<string>(`/admin/${path.split("/")[2]}`);
   const [dialogState,setDialogState]=useState<BaseDialogProps>({
     title:"",
     content:<></>,
@@ -109,7 +116,9 @@ export default function Page({
       },1000);
     }
   },[]);
-  const [selectedTabLink,setSelectedTabLink]=useState<string>(`/admin/${path.split("/")[2]}`);
+  useEffect(()=>{
+    setSelectedTabLink(`/admin/${path.split("/")[2]}`);
+  },[path]);
   const onTabSelect=(tabLink:string)=>{
     setSelectedTabLink(tabLink);
   };

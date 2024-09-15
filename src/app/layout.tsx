@@ -14,6 +14,7 @@ export default function RootLayout({
     <html lang="zh-cn">
       <head>
         <title>AriaBlogNext - DashBoard</title>
+        <link href="https://fonts.googleapis.cn/css2?family=Noto+Sans+SC:wght@400..900&display=swap" rel="stylesheet"/>
         <link href="https://fonts.googleapis.cn/css2?family=Noto+Serif+SC:wght@400..900&display=swap" rel="stylesheet"/>
       </head>
       <body>
