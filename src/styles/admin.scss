@@ -41,6 +41,8 @@
             display: flex;
             flex-direction: column;
             overflow-x: hidden;
+            max-width: 1000px;
+            margin:0 auto;
         }
     }
     &-leftbar{

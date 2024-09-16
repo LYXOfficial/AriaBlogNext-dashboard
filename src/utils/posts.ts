@@ -144,3 +144,86 @@ export async function getDraftBySlug(slug:string):Promise<Post>{
         return {};
     }
 }
+export async function updatePostMarkdown(markdown:string,slug:string):Promise<boolean>{
+    try{
+        const res=await fetch(`${config.backEndUrl}/update/post/updatePostMarkdown`,{
+            method: 'PUT',
+            headers:{
+                'Content-Type': 'application/json',
+            },
+            body:JSON.stringify({
+                slug:slug,
+                markdown:markdown,
+                token: localStorage.getItem('token'),
+            })
+        });
+        refreshPostsCache();
+        refreshPostCache(slug);
+        pushUpdateTime();
+        if(res.ok) return true;
+        else return false;
+    }
+    catch(err){
+        return false;
+    }
+}
+export async function updateDraftMarkdown(markdown:string,slug:string):Promise<boolean>{
+    try{
+        const res=await fetch(`${config.backEndUrl}/update/draft/updateDraftMarkdown`,{
+            method: 'PUT',
+            headers:{
+                'Content-Type': 'application/json',
+            },
+            body:JSON.stringify({
+                slug:slug,
+                markdown:markdown,
+                token: localStorage.getItem('token'),
+            })
+        });
+        if(res.ok) return true;
+        else return false;
+    }
+    catch(err){
+        return false;
+    }
+}
+export async function addPost(post:Post):Promise<boolean>{
+    try{
+        const res=await fetch(`${config.backEndUrl}/update/post/addPost`,{
+            method: 'POST',
+            headers:{
+                'Content-Type': 'application/json',
+            },
+            body:JSON.stringify({
+                ...post,
+                token: localStorage.getItem('token'),
+            })
+        });
+        refreshPostsCache();
+        pushUpdateTime();
+        if(res.ok) return true;
+        else return false;
+    }
+    catch(err){
+        return false;
+    }
+}
+export async function addDraft(post:Post):Promise<boolean>{
+    try{
+        const res=await fetch(`${config.backEndUrl}/update/draft/addDraft`,{
+            method: 'POST',
+            headers:{
+                'Content-Type': 'application/json',
+            },
+            body:JSON.stringify({
+                ...post,
+                token: localStorage.getItem('token'),
+            })
+        });
+        if(res.ok) return true;
+        else return false;
+    }
+    catch(err){
+        return false;
+    }
+}

@@ -1,0 +1,58 @@
+#vditor{
+    margin: 10px;
+    overflow: auto;
+    flex-grow: 1;
+    height: 0;
+    --ir-bracket-color:var(--colorBrandForegroundInverted);
+    --toolbar-icon-hover-color:var(--colorBrandForegroundInverted);
+    img{
+        max-width: min(300px,100%);
+        position: relative;
+        left: 50%;
+        transform: translateX(-50%);
+        -webkit-transform: translateX(-50%);
+        -moz-transform: translateX(-50%);
+        -ms-transform: translateX(-50%);
+        -o-transform: translateX(-50%);
+    }
+    &.vditor--fullscreen{
+        margin:0;
+    }
+    .vditor-toolbar{
+        &>:first-child,&>:nth-child(n+8):nth-child(-n+15),&>:nth-child(n+18):nth-child(-n+20),&>:nth-child(22){
+            display: none!important;
+        }
+    }
+    @media screen and (max-width: 520px) {
+        .vditor-toolbar__item{
+            display: block!important;
+            padding: 0 !important;
+        }
+        .vditor-toolbar__divider{
+            display: none!important;
+        }
+    }
+    button{
+        transition: .3s;
+        -webkit-transition: .3s;
+        -moz-transition: .3s;
+        -ms-transition: .3s;
+        -o-transition: .3s;
+    }
+    .vditor-preview,.vditor-ir,.vditor-wysiwyg{
+        p,table,div{
+            font-family: "Noto Serif SC";
+            font-weight: 500;
+        }
+    }
+    .vditor-sv{
+        font-family: monospace,"Noto Sans SC";
+        font-size: 1em;
+    }
+    .vditor-outline{
+        font-family: "Noto Sans SC";
+        @media screen and (max-width: 768px) {
+            display: none!important;
+        }
+    }
+}

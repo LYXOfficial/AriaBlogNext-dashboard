@@ -39,8 +39,9 @@ import Link from "next/link";
 import { Post } from "@/interfaces/post";
 import moment from "moment";
 import { BaseDialog,BaseDialogProps, EditPostDialog, EditPostDialogProps } from "@/components/Dialog";
-import { refreshPostsCache, removePost, updatePostInfo } from "@/utils/posts";
+import { addDraft, getDraftBySlug, getPostBySlug, refreshPostsCache, removePost, updateDraftInfo, updateDraftMarkdown, updatePostInfo } from "@/utils/posts";
 import { useRouter } from "nextjs-toploader/app";
+import stringRandom from "string-random";
 
 const columns:TableColumnDefinition<Post>[]=[
   createTableColumn<Post>({
@@ -144,7 +145,57 @@ export default function Posts(){
             }
           >刷新缓存</Button> */}
           <Button appearance="secondary" icon={<ArrowSync16Filled/>} onClick={()=>{setPosts([]);setUpdated(updated+1);}}>刷新列表</Button>
-          <Button appearance="primary" icon={<Add16Filled/>}>新建文章</Button>
+          <Button 
+            appearance="primary" 
+            icon={<Add16Filled/>}
+            onClick={()=>{
+              setEditPostDialogState({
+                open:true,
+                title:"新建文章",
+                post:{
+                  title:"新文章",
+                  mdContent:"",
+                  slug:stringRandom(8).toLowerCase(),
+                  tags:[],
+                  category:"",
+                  bannerImg:"",
+                  publishTime:moment().unix(),
+                  lastUpdatedTime:moment().unix(),
+                  description:"",
+                  coverFit:""
+                },
+                onClose:()=>{
+                  setEditPostDialogState({
+                    ...editPostDialogState,
+                    open:false,
+                  });
+                },
+                onConfirm:async (res)=>{
+                  setEditPostDialogState({
+                    ...editPostDialogState,
+                    open:false,
+                  });
+                  const success=()=>{
+                    messageBarRef.current?.addMessage(
+                      "提示","新建成功","success"
+                    );
+                    setTimeout(()=>router.push(`/admin/posts/edit?slug=${res.slug}&type=draft`),1000)
+                  }
+                  const failed=()=>{
+                    messageBarRef.current?.addMessage(
+                      "提示","新建失败","error"
+                    );
+                  }
+                  if(await addDraft(res)){
+                    success();
+                  }
+                  else failed();
+                }
+              })
+            }}
+          >
+            新建文章
+          </Button>
         </div>
       </div>
       <div id="posts-list">
@@ -243,11 +294,65 @@ export default function Posts(){
                           title:"提示",
                           content:"确定将此文章移至草稿箱吗？",
                           open:true,
-                          onConfirm:()=>{
+                          onConfirm:async ()=>{
                             setDialogState({
                               ...dialogState,
                               open:false,
                             });
+                            const failed=()=>{
+                              messageBarRef.current?.addMessage(
+                                "提示","移动失败","error",
+                              );
+                            }
+                            const success=()=>{
+                              messageBarRef.current?.addMessage(
+                                "提示","移动成功","success",
+                              );
+                              setTimeout(()=>router.push("/admin/drafts"),1000);
+                            }
+                            const mdContent=(await getPostBySlug(post.slug!)).mdContent;
+                            if(await addDraft(post)){
+                              if(await updateDraftMarkdown(mdContent!,post.slug!)){
+                                if(await removePost(post.slug!)){
+                                  success();
+                                }
+                                else failed();
+                              }
+                              else failed();
+                            }
+                            else{
+                              const overwritePost=await getDraftBySlug(post.slug!);
+                              if(overwritePost){
+                                setDialogState({
+                                  open:true,
+                                  title:"提示",
+                                  content:<>存在相同编号的草稿文章，是否覆盖？<br/><strong>{overwritePost.title}</strong></>,
+                                  onConfirm:async ()=>{
+                                    setDialogState({
+                                      ...dialogState,
+                                      open:false
+                                    });
+                                    if(await updateDraftInfo(post)){
+                                      if(await updateDraftMarkdown(mdContent!,post.slug!)){
+                                        if(await removePost(post.slug!)){
+                                          success();
+                                        }
+                                        else failed();
+                                      }
+                                      else failed();
+                                    }
+                                    else failed();
+                                  },
+                                  onClose:()=>{
+                                    setDialogState({
+                                      ...dialogState,
+                                      open:false
+                                    });
+                                  }
+                                });
+                              }
+                              else failed();
+                            }
                           },
                           onClose:()=>{
                             setDialogState({

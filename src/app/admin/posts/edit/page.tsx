@@ -1,5 +1,5 @@
 "use client";
-import { useEffect,useState,useRef } from "react";
+import { useEffect,useState,useRef, ReactElement } from "react";
 import "@/styles/edit.scss";
 import { useSearchParams } from "next/navigation";
 import Messages from "@/components/Messages";
@@ -14,11 +14,10 @@ import {
   SaveRegular,
 } from "@fluentui/react-icons";
 import { Post } from "@/interfaces/post";
-import { getDraftBySlug, getPostBySlug, updatePostInfo } from "@/utils/posts";
+import { addDraft, addPost, getDraftBySlug, getPostBySlug, removeDraft, updateDraftInfo, updateDraftMarkdown, updatePostInfo, updatePostMarkdown } from "@/utils/posts";
 import { config } from "@/dashboardConfig";
-import MilkdownEditor from "@/components/MilkdownEditor";
-import { MilkdownProvider } from "@milkdown/react";
-import { ProsemirrorAdapterProvider } from '@prosemirror-adapter/react';
+import Vditor from "@/components/Vditor";
+import moment from "moment";
 
 export default function Edit(){
   const searchParams=useSearchParams();
@@ -42,18 +41,34 @@ export default function Edit(){
   });
   const [updated,setUpdated]=useState(0);
   const [currentPostInfo,setCurrentPostInfo]=useState<Post>({});
-  
+  const [saving,setSaving]=useState(false);
+  const [saveAsing,setSaveAsing]=useState(false);
+  const saveButtonRef=useRef<HTMLButtonElement>(null);
+  const vditorRef=useRef<any>(null);
   useEffect(()=>{
+    let r:Post;
     if(type=="post")
       slug?getPostBySlug(slug!)
         .then(res=>{
+          r=res;
           setCurrentPostInfo(res);
         }):0;
     else
       slug?getDraftBySlug(slug!)
         .then(res=>{
+          r=res;
           setCurrentPostInfo(res);
         }):0;
+    const saveHandler=(e:KeyboardEvent)=>{
+      if(e.ctrlKey&&e.key=="s"){
+        e.preventDefault();
+        saveButtonRef.current?.click();
+      }
+    }
+    window.addEventListener("keydown",saveHandler);
+    return ()=>{
+      window.removeEventListener("keydown",saveHandler);
+    }
   },[type,slug,updated]);
   return (
     <>
@@ -74,37 +89,149 @@ export default function Edit(){
           <Button
             icon={<SaveFilled/>}
             appearance="primary"
-            onClick={()=>{
-              //TODO: save post
-              messageBarRef.current?.addMessage({
-                message:"保存成功",
-                type:"success",
-              });
+            ref={saveButtonRef}
+            disabled={saving}
+            onClick={async ()=>{
+              setSaving(true);
+              const failed=()=>{
+                messageBarRef.current?.addMessage(
+                  "提示","保存失败","error",
+                );
+              }
+              const success=()=>{
+                messageBarRef.current?.addMessage(
+                  "提示","保存成功","success",
+                );
+              }
+              console.log(vditorRef.current?.getMarkdown());
+              if(type=="post"){
+                if(await updatePostMarkdown(vditorRef.current?.getMarkdown(),slug!)){
+                  if(await updatePostInfo({...currentPostInfo,lastUpdatedTime:moment().unix()})){
+                    success();
+                    setUpdated(updated+1);
+                  }
+                  else failed();
+                }
+                else{
+                  failed();
+                }
+              }
+              else if(type=="draft"){
+                if(await updateDraftMarkdown(vditorRef.current?.getMarkdown(),slug!)){
+                  if(await updateDraftInfo({...currentPostInfo,lastUpdatedTime:moment().unix()})){
+                    success();
+                    setUpdated(updated+1);
+                  }
+                  else failed();
+                }
+                else{
+                  failed();
+                }
+              }
+              setSaving(false);
             }}
           >
-            保存
+            {saving?"保存中...":"保存"}
           </Button>
-          {
-            type=="post"?
-              <Button
-                icon={<SaveRegular/>}
-                onClick={()=>{
-                  //TODO: save post
-                  messageBarRef.current?.addMessage("另存成功","success");
-                }}
-              >
-                另存为草稿
-              </Button>:
-              <Button
-                icon={<ArrowUploadRegular/>}
-                onClick={()=>{
-                  //TODO: publish post
-                  messageBarRef.current?.addMessage("发布成功","success");
-                }}
-              >
-                发布文章
-              </Button>
-          }
+            <Button
+              icon={type=="post"?<SaveRegular/>:<ArrowUploadRegular/>}
+              disabled={saveAsing}
+              onClick={async ()=>{
+                setSaveAsing(true);
+                const failed=()=>{
+                  messageBarRef.current?.addMessage(
+                    "提示",type=="post"?"另存失败":"发布失败","error",
+                  );
+                }
+                const success=()=>{
+                  messageBarRef.current?.addMessage(
+                    "提示",type=="post"?"另存成功":"发布成功","success",
+                  );
+                  setTimeout(()=>router.push(`/admin/posts/edit?slug=${slug}&type=${type=="post"?"draft":"post"}`),1000);
+                }
+                if(type=="post"){
+                  if(await addDraft({...currentPostInfo,lastUpdatedTime:moment().unix()})){
+                    if(await updateDraftMarkdown(vditorRef?.current?.getMarkdown(),slug!)){
+                      success();
+                    }
+                    else failed();
+                  }
+                  else{
+                    const overwritePost=await getDraftBySlug(slug!);
+                    if(overwritePost){
+                      setDialogState({
+                        open:true,
+                        title:"提示",
+                        content:<>存在相同编号的草稿文章，是否覆盖？<br/><strong>{overwritePost.title}</strong></>,
+                        onConfirm:async ()=>{
+                          setDialogState({
+                            ...dialogState,
+                            open:false
+                          });
+                          if(await updateDraftInfo({...currentPostInfo,lastUpdatedTime:moment().unix()})){
+                            if(await updateDraftMarkdown(vditorRef?.current?.getMarkdown(),slug!)){
+                              success();
+                            }
+                            else failed();
+                          }
+                          else failed();
+                        },
+                        onClose:()=>{
+                          setDialogState({
+                            ...dialogState,
+                            open:false
+                          });
+                        }
+                      });
+                    }
+                    else failed();
+                  }
+                }
+                else{
+                  if(await addPost({...currentPostInfo,lastUpdatedTime:moment().unix()})){
+                    if(await updatePostMarkdown(vditorRef?.current?.getMarkdown(),slug!)){
+                      success();
+                    }
+                    else failed();
+                  }
+                  else{
+                    const overwritePost=await getPostBySlug(slug!);
+                    if(overwritePost){
+                      setDialogState({
+                        open:true,
+                        title:"提示",
+                        content:<>存在相同编号的发布文章，是否覆盖？<br/><strong>{overwritePost.title}</strong></>,
+                        onConfirm:async ()=>{
+                          setDialogState({
+                            ...dialogState,
+                            open:false
+                          });
+                          if(await updatePostInfo({...currentPostInfo,lastUpdatedTime:moment().unix()})){
+                            if(await updatePostMarkdown(vditorRef?.current?.getMarkdown(),slug!)){
+                              if(await removeDraft(slug!))
+                                success();
+                              else failed();
+                            }
+                            else failed();
+                          }
+                          else failed();
+                        },
+                        onClose:()=>{
+                          setDialogState({
+                            ...dialogState,
+                            open:false
+                          });
+                        }
+                      });
+                    }
+                    else failed();
+                  }
+                }
+                setSaveAsing(false);
+              }}
+            >
+              {type=="post"?(saveAsing?"另存中...":"另存为草稿"):(saveAsing?"发布中...":"发布文章")}
+            </Button>
         </div>
       </div>
       <div id="editpost-main">
@@ -116,12 +243,14 @@ export default function Edit(){
                 {currentPostInfo.title}
               </Label>
               <Label id="editpost-main-slug">
-                {type=="post"?"*发布文章 ":"*草稿 "} 
+                {type=="post"?"*已发布 ":"*草稿 "} 
                 {
                   type=="post"?
                   <a 
                     href={`${config.blogUrl}/posts/${currentPostInfo.slug}`} 
                     title="查看原站文章"
+                    target="_blank"
+                    rel="noreferrer"
                   >
                     {currentPostInfo.slug}
                   </a>
@@ -132,11 +261,11 @@ export default function Edit(){
                 id="editpost-main-editinfo"
                 size="small"
                 icon={<Edit16Regular/>}
-                title="编辑文章信息"
+                title={`编辑${type=="post"?"文章":"草稿"}信息`}
                 onClick={()=>{
                   setEditPostDialogState({
                     open:true,
-                    title:"修改文章属性",
+                    title:`修改${type=="post"?"文章":"草稿"}属性`,
                     post:currentPostInfo,
                     onClose:()=>{
                       setEditPostDialogState({
@@ -150,27 +279,39 @@ export default function Edit(){
                         open:false
                       });
                       if(postn!=currentPostInfo)
-                        updatePostInfo(postn).then((res)=>{
-                          if(res){
-                            messageBarRef.current?.addMessage("提示","修改成功","success");
-                            setUpdated(updated+1);
-                          }
-                          else messageBarRef.current?.addMessage("提示","修改失败","error");
-                        });
+                        if(type=="post")
+                          updatePostInfo(postn).then((res)=>{
+                            if(res){
+                              messageBarRef.current?.addMessage("提示","修改成功","success");
+                              setUpdated(updated+1);
+                            }
+                            else messageBarRef.current?.addMessage("提示","修改失败","error");
+                          });
+                        else
+                          updateDraftInfo(postn).then((res)=>{
+                            if(res){
+                              messageBarRef.current?.addMessage("提示","修改成功","success");
+                              setUpdated(updated+1);
+                            }
+                            else messageBarRef.current?.addMessage("提示","修改失败","error");
+                          });
                     }
                   })
                 }}
               />
+              <Label id="editpost-main-lastsave">
+                上次保存：
+                {currentPostInfo.lastUpdatedTime?
+                  moment.unix(currentPostInfo.lastUpdatedTime)
+                    .format("MM-DD HH:mm:ss"):"未保存"
+                }
+              </Label>
             </div>
 
           </>
           :<>加载中...</>
         }
-        <MilkdownProvider>
-          <ProsemirrorAdapterProvider>
-            <MilkdownEditor/>
-          </ProsemirrorAdapterProvider>
-        </MilkdownProvider>
+        <Vditor content={currentPostInfo.mdContent} ref={vditorRef}/>
       </div>
       <Messages ref={messageBarRef}/>
       <BaseDialog {...dialogState}/>
