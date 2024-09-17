@@ -4,11 +4,9 @@ export default async function pushUpdateTime(){
         await fetch(`${config.backEndUrl}/update/siteInfo/latestUpdateTime`,{
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                token: localStorage.getItem("token")
-            })
+                "Content-Type": "application/json",
+                "Authorization": "Bearer "+localStorage.getItem("token")
+            }
         });
     }
     catch(e){}

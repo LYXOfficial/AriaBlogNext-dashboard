@@ -7,7 +7,12 @@ export declare interface TagCategory{
     name:string,
     count:number
 }
-
+function getHeader(){
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': "Bearer "+localStorage.getItem('token')
+    };
+}
 export async function refreshPostsCache(){
     try{await fetch(`${config.blogUrl}/refreshCache/posts`);}
     catch(e){}
@@ -20,12 +25,9 @@ export async function removePost(slug:string):Promise<boolean>{
     try{
         const res=await fetch(`${config.backEndUrl}/update/post/deletePost`, {
             method: 'DELETE',
-            headers:{
-                'Content-Type': 'application/json',
-            },
+            headers:getHeader(),
             body:JSON.stringify({
-                slug: slug,
-                token: localStorage.getItem('token'),
+                slug: slug
             })
         });
         refreshPostsCache();
@@ -64,13 +66,10 @@ export async function updatePostInfo(post:Post):Promise<boolean>{
     try{
         const res=await fetch(`${config.backEndUrl}/update/post/updatePostInfo`, {
             method: 'PUT',
-            headers:{
-                'Content-Type': 'application/json',
-            },
+            headers:getHeader(),
             body:JSON.stringify({
                 ...post,
                 lastUpdatedTime:moment().unix(),
-                token: localStorage.getItem('token'),
             })
         });
         refreshPostsCache();
@@ -87,12 +86,9 @@ export async function removeDraft(slug:string):Promise<boolean>{
     try{
         const res=await fetch(`${config.backEndUrl}/update/draft/deleteDraft`, {
             method: 'DELETE',
-            headers:{
-                'Content-Type': 'application/json',
-            },
+            headers:getHeader(),
             body:JSON.stringify({
                 slug: slug,
-                token: localStorage.getItem('token'),
             })
         });
         if(res.ok) return true;
@@ -106,13 +102,10 @@ export async function updateDraftInfo(post:Post):Promise<boolean>{
     try{
         const res=await fetch(`${config.backEndUrl}/update/draft/updateDraftInfo`, {
             method: 'PUT',
-            headers:{
-                'Content-Type': 'application/json',
-            },
+            headers:getHeader(),
             body:JSON.stringify({
                 ...post,
                 lastUpdatedTime:moment().unix(),
-                token: localStorage.getItem('token'),
             })
         });
         if(res.ok) return true;
@@ -136,7 +129,7 @@ export async function getPostBySlug(slug:string):Promise<Post>{
 }
 export async function getDraftBySlug(slug:string):Promise<Post>{
     try{
-        const res=await fetch(`${config.backEndUrl}/get/draft/draftBySlug?slug=${slug}`);
+        const res=await fetch(`${config.backEndUrl}/get/draft/draftBySlug?slug=${slug}`,{headers:getHeader()});
         const data=await res.json();
         return data.data;
     }
@@ -148,13 +141,10 @@ export async function updatePostMarkdown(markdown:string,slug:string):Promise<bo
     try{
         const res=await fetch(`${config.backEndUrl}/update/post/updatePostMarkdown`,{
             method: 'PUT',
-            headers:{
-                'Content-Type': 'application/json',
-            },
+            headers:getHeader(),
             body:JSON.stringify({
                 slug:slug,
                 markdown:markdown,
-                token: localStorage.getItem('token'),
             })
         });
         refreshPostsCache();
@@ -171,13 +161,10 @@ export async function updateDraftMarkdown(markdown:string,slug:string):Promise<b
     try{
         const res=await fetch(`${config.backEndUrl}/update/draft/updateDraftMarkdown`,{
             method: 'PUT',
-            headers:{
-                'Content-Type': 'application/json',
-            },
+            headers:getHeader(),
             body:JSON.stringify({
                 slug:slug,
                 markdown:markdown,
-                token: localStorage.getItem('token'),
             })
         });
         if(res.ok) return true;
@@ -191,12 +178,9 @@ export async function addPost(post:Post):Promise<boolean>{
     try{
         const res=await fetch(`${config.backEndUrl}/update/post/addPost`,{
             method: 'POST',
-            headers:{
-                'Content-Type': 'application/json',
-            },
+            headers:getHeader(),
             body:JSON.stringify({
                 ...post,
-                token: localStorage.getItem('token'),
             })
         });
         refreshPostsCache();
@@ -212,12 +196,9 @@ export async function addDraft(post:Post):Promise<boolean>{
     try{
         const res=await fetch(`${config.backEndUrl}/update/draft/addDraft`,{
             method: 'POST',
-            headers:{
-                'Content-Type': 'application/json',
-            },
+            headers:getHeader(),
             body:JSON.stringify({
                 ...post,
-                token: localStorage.getItem('token'),
             })
         });
         if(res.ok) return true;

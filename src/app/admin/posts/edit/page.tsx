@@ -50,14 +50,18 @@ export default function Edit(){
     if(type=="post")
       slug?getPostBySlug(slug!)
         .then(res=>{
-          r=res;
-          setCurrentPostInfo(res);
+          if(res){
+            r=res;
+            setCurrentPostInfo(res);
+          }
         }):0;
     else
       slug?getDraftBySlug(slug!)
         .then(res=>{
-          r=res;
-          setCurrentPostInfo(res);
+          if(res){
+            r=res;
+            setCurrentPostInfo(res);
+          }
         }):0;
     const saveHandler=(e:KeyboardEvent)=>{
       if(e.ctrlKey&&e.key=="s"){

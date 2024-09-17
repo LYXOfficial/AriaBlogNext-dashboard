@@ -97,10 +97,10 @@ export default function Drafts(){
   const rows=sort(getRows());
   useEffect(()=>{
     (async ()=>{
-      const postCountRes=await fetch(`${config.backEndUrl}/get/draft/searchDraftsByTitleCount?title=${query}`);
+      const postCountRes=await fetch(`${config.backEndUrl}/get/draft/searchDraftsByTitleCount?title=${query}`,{headers:{"Authorization":`Bearer ${localStorage.getItem('token')}`}});
       if(postCountRes.ok) setPostCount((await postCountRes.json()).count);
       const startl=(page-1)*20,endl=page*20;
-      const postsRes=await fetch(`${config.backEndUrl}/get/draft/searchDraftsByTitle?startl=${startl}&endl=${endl}&title=${query}`);
+      const postsRes=await fetch(`${config.backEndUrl}/get/draft/searchDraftsByTitle?startl=${startl}&endl=${endl}&title=${query}`,{headers:{"Authorization":`Bearer ${localStorage.getItem('token')}`}});
       if(postsRes.ok) setPosts((await postsRes.json()).data);
     })();
   },[page,updated,query]);

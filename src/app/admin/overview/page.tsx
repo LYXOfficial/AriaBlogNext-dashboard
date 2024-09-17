@@ -21,6 +21,7 @@ export default function Overview(){
   const [flinkCount,setFlinkCount]=useState<number>(-1);
   const [commentCount,setCommentCount]=useState<number>(-1);
   const [draftCount,setDraftCount]=useState<number>(-1);
+  const [lastUpdate,setLastUpdate]=useState<number>(-1);
   useEffect(()=>{(async ()=>{
     fetch(`${config.backEndUrl}/get/post/postCount`)
       .then(async res=>{
@@ -40,7 +41,7 @@ export default function Overview(){
           setTagCount((await res.json()).count);
         }
       })
-    fetch(`${config.backEndUrl}/get/draft/draftCount`)
+    fetch(`${config.backEndUrl}/get/draft/draftCount`,{headers:{'Authorization':`Bearer ${localStorage.getItem('token')}`}})
       .then(async res=>{
         if(res.ok){
           setDraftCount((await res.json()).count);
@@ -57,6 +58,11 @@ export default function Overview(){
         if(res.ok){
           setFlinkCount((await res.json()).count);
         }
+      })
+    fetch(`${config.backEndUrl}/get/siteInfo/lastUpdateTime`)
+      .then(async res=>{
+        if(res.ok)
+          setLastUpdate((await res.json()).time);
       })
   })()},[]);
   return (
@@ -98,6 +104,11 @@ export default function Overview(){
           <span className="overview-count-title">友链</span>
           <span className="overview-count-value">{flinkCount==-1?"...":flinkCount}</span>
         </div>
+        {/* <div className="overview-count flinks">
+          <Link24Regular className="overview-count-icon"/>
+          <span className="overview-count-title">上次更新</span>
+          <span className="overview-count-value">{lastUpdate==-1?"...":lastUpdate}</span>
+        </div> */}
       </div>
     </>
   );

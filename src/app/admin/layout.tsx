@@ -107,13 +107,18 @@ export default function Page({
         router.push("/login");
       },1000);
     }
-    else if(!verifyToken(localStorage.getItem("token"))){
-      messageBarRef.current?.addMessage(
-        "错误","登录失效，请重新登录","error"
-      );
-      setTimeout(()=>{
-        router.push("/login");
-      },1000);
+    else{
+      verifyToken(localStorage.getItem("token"))
+        .then(res=>{
+          if(!res){
+            messageBarRef.current?.addMessage(
+              "错误","登录失效，请重新登录","error"
+            );
+            setTimeout(()=>{
+              router.push("/login");
+            },1000);
+          }
+        })
     }
   },[]);
   useEffect(()=>{

@@ -25,12 +25,17 @@ export default function Page(){
         submitRef.current?.click();
     }
     document.addEventListener("keydown",keydownHandler);
-    if(verifyToken(localStorage.getItem("token"))){
-      messageBarRef.current?.addMessage("提示","已登录，跳转中..","info");
-      setTimeout(()=>{
-        router.push("/admin/overview");
-      },1000);
-    }
+    verifyToken(localStorage.getItem("token"))
+      .then(res=>{
+        if(res){
+          messageBarRef.current?.addMessage(
+            "提示","已登录，跳转中...","info"
+          );
+          setTimeout(()=>{
+            router.push("/admin/overview");
+          },1000);
+        }
+      })
     return ()=>document.removeEventListener("keydown",keydownHandler);
   })()},[]);
   return (
