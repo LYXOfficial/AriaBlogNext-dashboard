@@ -363,7 +363,7 @@ export default function Posts(){
                         })
                       }}
                     />
-                    {/* <Button 
+                    <Button 
                       size="small" 
                       icon={<DeleteRegular/>} 
                       title="删除文章" 
@@ -414,7 +414,7 @@ export default function Posts(){
                           }
                         });
                       }}
-                    /> */}
+                    />
                   </TableCellLayout>
                 </TableCell>
               </TableRow>
