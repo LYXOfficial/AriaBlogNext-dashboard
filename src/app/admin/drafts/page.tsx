@@ -133,7 +133,7 @@ export default function Drafts(){
                 post:{
                   title:"新文章",
                   mdContent:"",
-                  slug:stringRandom(8).toLowerCase(),
+                  slug:stringRandom(8,{letters:"abcdef"}),
                   tags:[],
                   category:"",
                   bannerImg:"",

@@ -255,15 +255,9 @@ export default function Page(){
     }
     const resizeHandler=()=>{
       const width=document.documentElement.clientWidth;
-      if(width<600){
-        setCols(1);
-      }
-      else if(width<900){
-        setCols(2);
-      }
-      else{
-        setCols(3);
-      }
+      if(width<600) setCols(1);
+      else if(width<900) setCols(2);
+      else setCols(3);
     }
     window.addEventListener("resize",resizeHandler);
     import("wc-waterfall");
