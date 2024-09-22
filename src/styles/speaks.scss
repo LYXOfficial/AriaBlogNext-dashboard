@@ -1,0 +1,108 @@
+@mixin flexbase{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 5px;
+}
+#speaks{
+    &-topbar{
+        @include flexbase;
+        white-space: nowrap;
+        &-count{
+            @include flexbase;
+        }
+        &-actions{
+            @include flexbase;
+            &>button{
+                margin-left:5px;
+                margin-bottom: 5px;
+            }
+        }
+        @media screen and (max-width:400px){
+            justify-content: center;
+            &-actions{
+                width: 100%;
+            }
+            .fui-Button{
+                width: calc(50% - 5px);
+            }
+        }
+    }
+    &-pagination{
+        @include flexbase;
+        margin-top:10px;
+        &-text{
+            margin-left:auto;
+        }
+    }
+    &-list{
+        overflow: auto;
+        position: relative;
+        padding:10px;
+        .fui-Button{
+            border: none;
+            margin-right: 5px;
+            border-radius: 50%;
+            -webkit-border-radius: 50%;
+            -moz-border-radius: 50%;
+            -ms-border-radius: 50%;
+            -o-border-radius: 50%;
+            &[disabled]{
+                background: transparent!important;
+            }
+        }
+    }
+}
+.speaks{
+    &-pagination{
+        &-pgbtn>.fui-Button{
+            min-width: 0!important;
+            margin-right:5px;
+        }
+        &-spec{
+            margin-right: 5px;
+        }
+    }
+    &-item{
+        padding:12px;
+        padding-top:6px;
+        background-color:var(--colorNeutralBackground1);
+        border:1px solid var(--colorNeutralCardBackgroundSelected);
+        border-radius: 10px;
+        -webkit-border-radius: 10px;
+        -moz-border-radius: 10px;
+        -ms-border-radius: 10px;
+        -o-border-radius: 10px;
+        &-content{
+            word-wrap: break-word;
+            a{
+                color: var(--colorBrandForeground1);
+            }
+            img{
+                max-width: 100%;
+            }
+        }
+        &-time{
+            color: var(--colorNeutralForeground4);
+            font-size: 12px;
+            border-top: 2px dashed var(--colorNeutralBackground6);
+            margin-top: 5px;
+        }
+        &-topbar{
+            position: relative;
+            left: -4px;
+        }
+        &-editor{
+            max-width: 100%;
+            height: 150px !important;
+            border: 1px solid var(--colorNeutralBackground3Pressed);
+            border-radius: 5px;
+            margin: 10px 0;
+            -webkit-border-radius: 5px;
+            -moz-border-radius: 5px;
+            -ms-border-radius: 5px;
+            -o-border-radius: 5px;
+        }
+    }
+}

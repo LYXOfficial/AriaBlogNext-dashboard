@@ -155,7 +155,7 @@ export default function Posts(){
                 post:{
                   title:"新文章",
                   mdContent:"",
-                  slug:stringRandom(8).toLowerCase(),
+                  slug:stringRandom(8,{letters:"abcdef"}),
                   tags:[],
                   category:"",
                   bannerImg:"",
@@ -363,7 +363,7 @@ export default function Posts(){
                         })
                       }}
                     />
-                    {/* <Button 
+                    <Button 
                       size="small" 
                       icon={<DeleteRegular/>} 
                       title="删除文章" 
@@ -414,7 +414,7 @@ export default function Posts(){
                           }
                         });
                       }}
-                    /> */}
+                    />
                   </TableCellLayout>
                 </TableCell>
               </TableRow>

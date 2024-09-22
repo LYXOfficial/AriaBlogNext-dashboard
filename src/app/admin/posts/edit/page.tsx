@@ -124,7 +124,6 @@ export default function Edit(){
                 if(await updateDraftMarkdown(vditorRef.current?.getMarkdown(),slug!)){
                   if(await updateDraftInfo({...currentPostInfo,lastUpdatedTime:moment().unix()})){
                     success();
-                    setUpdated(updated+1);
                   }
                   else failed();
                 }
