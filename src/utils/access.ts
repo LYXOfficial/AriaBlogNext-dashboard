@@ -19,4 +19,5 @@ export default async function verifyToken(token:string|null):Promise<boolean>{
 }
 export function exitLogin(){
     window.localStorage.removeItem("token");
+    window.localStorage.removeItem("imageToken");
 }

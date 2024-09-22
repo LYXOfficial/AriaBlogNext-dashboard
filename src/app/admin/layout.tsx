@@ -29,6 +29,7 @@ import {
 import NoSSR from "@/components/NoSSR";
 import "@/styles/admin.scss";
 import { BaseDialog,BaseDialogProps } from "@/components/Dialog";
+import { getImageToken } from "@/utils/siteinfo";
 
 declare interface TabItem{
   name:string;
@@ -109,7 +110,7 @@ export default function Page({
     }
     else{
       verifyToken(localStorage.getItem("token"))
-        .then(res=>{
+        .then(async res=>{
           if(!res){
             messageBarRef.current?.addMessage(
               "错误","登录失效，请重新登录","error"
@@ -117,6 +118,9 @@ export default function Page({
             setTimeout(()=>{
               router.push("/login");
             },1000);
+          }
+          else{
+            localStorage.setItem("imageToken",await getImageToken());
           }
         })
     }

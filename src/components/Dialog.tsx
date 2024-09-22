@@ -18,6 +18,8 @@ import { Post } from "@/interfaces/post";
 import { ChangeEvent, ReactElement, useEffect, useState } from "react";
 import { getCategories, getTags } from "@/utils/posts";
 import { Dismiss12Regular } from "@fluentui/react-icons";
+import { uploadImage } from "@/utils/image";
+import mime from "mime";
 
 export declare interface BaseDialogProps{
   title:string,
@@ -104,6 +106,65 @@ export const EditPostDialog=(
               <Label>头图</Label>
               <Input
                 value={currentPostInfo.bannerImg??""} 
+                onKeyDown={
+                  (e)=>{
+                    if(e.ctrlKey&&e.key==='v'){
+                      navigator.clipboard.read().then(async (res)=>{
+                        const imageTypes=['image/png','image/jpeg',"image/webp","image/gif"];
+                        const currentType=imageTypes.find(type=>res[0].types.includes(type))
+                        if(currentType){
+                          e.preventDefault();
+                          const file=new File([await res[0].getType(currentType)],`file.${mime.getExtension(res[0].types[0])}`);
+                          setCurrentPostInfo({
+                            ...currentPostInfo,
+                            bannerImg:"上传中..."
+                          });
+                          const ur=await uploadImage(file);
+                          if(ur){
+                            setCurrentPostInfo({
+                              ...currentPostInfo,
+                              bannerImg:ur
+                            });
+                          }
+                          else{
+                            setCurrentPostInfo({
+                              ...currentPostInfo,
+                              bannerImg:"上传失败"
+                            });
+                          }
+                        }
+                        else if(res[0].types.includes("text/plain")){
+                          const text=await (await res[0].getType("text/plain")).text();
+                          if(((text.startsWith("https://")||text.startsWith("http://"))&&!text.startsWith("https://bu.dusays.com"))
+                            &&(text.endsWith(".jpg")||text.endsWith(".png")||text.endsWith(".jpeg")||text.endsWith(".gif")||text.endsWith(".webp"))){
+                              const tr=await fetch(text);
+                              if(tr.ok){
+                                e.preventDefault();
+                                const file=new File([await tr.blob()],`file.${text.split(".")[text.split(".").length-1]}`);
+                                setCurrentPostInfo({
+                                  ...currentPostInfo,
+                                  bannerImg:"上传中..."
+                                });
+                                const ur=await uploadImage(file);
+                                if(ur){
+                                  setCurrentPostInfo({
+                                    ...currentPostInfo,
+                                    bannerImg:ur
+                                  });
+                                }
+                                else{
+                                  setCurrentPostInfo({
+                                    ...currentPostInfo,
+                                    bannerImg:text
+                                  });
+                                }
+                              }
+                          }
+                        }
+                      });
+                    }
+                  }
+                }
                 onChange={
                   (e)=>setCurrentPostInfo({
                     ...currentPostInfo,
