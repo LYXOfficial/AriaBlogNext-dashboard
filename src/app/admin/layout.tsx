@@ -29,7 +29,6 @@ import {
 import NoSSR from "@/components/NoSSR";
 import "@/styles/admin.scss";
 import { BaseDialog,BaseDialogProps } from "@/components/Dialog";
-import { getImageToken } from "@/utils/siteinfo";
 
 declare interface TabItem{
   name:string;
@@ -118,9 +117,6 @@ export default function Page({
             setTimeout(()=>{
               router.push("/login");
             },1000);
-          }
-          else{
-            localStorage.setItem("imageToken",await getImageToken());
           }
         })
     }

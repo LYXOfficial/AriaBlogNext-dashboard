@@ -106,6 +106,36 @@ export const EditPostDialog=(
               <Label>头图</Label>
               <Input
                 value={currentPostInfo.bannerImg??""} 
+                onDragEnter={(e)=>e.preventDefault()}
+                onDragOver={(e)=>e.preventDefault()}
+                placeholder="拖放或粘贴链接和文件至此处..."
+                onDrop={async (e)=>{
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const imageTypes=['image/png','image/jpeg',"image/webp","image/gif"];
+                  e.dataTransfer.dropEffect="link";
+                  var file=Array.from(e.dataTransfer.files)[0];
+                  console.log(file);
+                  if(imageTypes.includes(file.type)){
+                    setCurrentPostInfo({
+                      ...currentPostInfo,
+                      bannerImg:"上传中..."
+                    });
+                    const ur=await uploadImage(file);
+                    if(ur){
+                      setCurrentPostInfo({
+                        ...currentPostInfo,
+                        bannerImg:ur
+                      });
+                    }
+                    else{
+                      setCurrentPostInfo({
+                        ...currentPostInfo,
+                        bannerImg:"上传失败"
+                      });
+                    }
+                  }
+                }}
                 onKeyDown={
                   (e)=>{
                     if(e.ctrlKey&&e.key==='v'){
@@ -114,7 +144,7 @@ export const EditPostDialog=(
                         const currentType=imageTypes.find(type=>res[0].types.includes(type))
                         if(currentType){
                           e.preventDefault();
-                          const file=new File([await res[0].getType(currentType)],`file.${mime.getExtension(res[0].types[0])}`);
+                          const file=new File([await res[0].getType(currentType)],`file.${mime.getExtension(currentType)}`);
                           setCurrentPostInfo({
                             ...currentPostInfo,
                             bannerImg:"上传中..."
