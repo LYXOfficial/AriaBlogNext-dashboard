@@ -15,9 +15,9 @@ import {
   Textarea,
 } from "@fluentui/react-components";
 import { Post } from "@/interfaces/post";
-import { ChangeEvent, ReactElement, useEffect, useState } from "react";
+import { ChangeEvent, ReactElement, useEffect, useRef, useState } from "react";
 import { getCategories, getTags } from "@/utils/posts";
-import { Dismiss12Regular } from "@fluentui/react-icons";
+import { ArrowUploadRegular, Dismiss12Regular } from "@fluentui/react-icons";
 import { uploadImage } from "@/utils/image";
 import mime from "mime";
 
@@ -70,6 +70,8 @@ export const EditPostDialog=(
   const [categories,setCategories]=useState<ReactElement[]>([]);
   const [tags,setTags]=useState<ReactElement[]>([]);
   const [tagInputValue,setTagInputValue]=useState("");
+  const imageTypes=["image/png","image/jpeg","image/gif","image/webp","image/bmp","image/x-icon"];
+  const uploadImageRef=useRef<HTMLInputElement>(null);
   useEffect(()=>{
     setCurrentPostInfo(post);
   },[post]);
@@ -104,44 +106,43 @@ export const EditPostDialog=(
                 }
               />
               <Label>头图</Label>
-              <Input
-                value={currentPostInfo.bannerImg??""} 
-                onDragEnter={(e)=>e.preventDefault()}
-                onDragOver={(e)=>e.preventDefault()}
-                placeholder="拖放或粘贴链接和文件至此处..."
-                onDrop={async (e)=>{
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const imageTypes=['image/png','image/jpeg',"image/webp","image/gif"];
-                  e.dataTransfer.dropEffect="link";
-                  var file=Array.from(e.dataTransfer.files)[0];
-                  console.log(file);
-                  if(imageTypes.includes(file.type)){
-                    setCurrentPostInfo({
-                      ...currentPostInfo,
-                      bannerImg:"上传中..."
-                    });
-                    const ur=await uploadImage(file);
-                    if(ur){
+              <div className="dialog-formgroup">
+                <Input
+                  value={currentPostInfo.bannerImg??""} 
+                  onDragEnter={(e)=>e.preventDefault()}
+                  onDragOver={(e)=>e.preventDefault()}
+                  placeholder="拖放或粘贴链接和文件至此处..."
+                  onDrop={async (e)=>{
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.dataTransfer.dropEffect="link";
+                    var file=Array.from(e.dataTransfer.files)[0];
+                    console.log(file);
+                    if(imageTypes.includes(file.type)){
                       setCurrentPostInfo({
                         ...currentPostInfo,
-                        bannerImg:ur
+                        bannerImg:"上传中..."
                       });
+                      const ur=await uploadImage(file);
+                      if(ur){
+                        setCurrentPostInfo({
+                          ...currentPostInfo,
+                          bannerImg:ur
+                        });
+                      }
+                      else{
+                        setCurrentPostInfo({
+                          ...currentPostInfo,
+                          bannerImg:"上传失败"
+                        });
+                      }
                     }
-                    else{
-                      setCurrentPostInfo({
-                        ...currentPostInfo,
-                        bannerImg:"上传失败"
-                      });
-                    }
-                  }
-                }}
-                onKeyDown={
-                  (e)=>{
-                    if(e.ctrlKey&&e.key==='v'){
+                  }}
+                  onPaste={
+                    (e)=>{
                       navigator.clipboard.read().then(async (res)=>{
-                        const imageTypes=['image/png','image/jpeg',"image/webp","image/gif"];
                         const currentType=imageTypes.find(type=>res[0].types.includes(type))
+                        console.log(res[0].types)
                         if(currentType){
                           e.preventDefault();
                           const file=new File([await res[0].getType(currentType)],`file.${mime.getExtension(currentType)}`);
@@ -194,14 +195,49 @@ export const EditPostDialog=(
                       });
                     }
                   }
-                }
-                onChange={
-                  (e)=>setCurrentPostInfo({
-                    ...currentPostInfo,
-                    bannerImg:e.target.value
-                  })
-                }
-              />
+                  onChange={
+                    (e)=>setCurrentPostInfo({
+                      ...currentPostInfo,
+                      bannerImg:e.target.value
+                    })
+                  }
+                />
+                <Button
+                  icon={<ArrowUploadRegular/>}
+                  onClick={()=>uploadImageRef.current?.click()}
+                  title="上传图片"
+                />
+                <input 
+                  type="file" 
+                  accept={imageTypes.join(",")}
+                  disabled={currentPostInfo.bannerImg=="上传中..."}
+                  style={{display:"none"}}
+                  ref={uploadImageRef}
+                  onChange={(e)=>{
+                    const file=e.target.files?.[0]
+                    if(file&&imageTypes.includes(file.type)){
+                      setCurrentPostInfo({
+                        ...currentPostInfo,
+                        bannerImg:"上传中..."
+                      });
+                      uploadImage(file).then((url)=>{
+                        if(url){
+                          setCurrentPostInfo({
+                            ...currentPostInfo,
+                            bannerImg:url
+                          });
+                        }
+                        else{
+                          setCurrentPostInfo({
+                            ...currentPostInfo,
+                            bannerImg:"上传失败"
+                          });
+                        }
+                      });
+                    }
+                  }}
+                />
+              </div>
               <Label required>标签</Label>
               <Combobox 
                 selectedOptions={currentPostInfo.tags??[]}

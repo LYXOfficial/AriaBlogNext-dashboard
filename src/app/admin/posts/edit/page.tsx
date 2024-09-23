@@ -1,5 +1,5 @@
 "use client";
-import { useEffect,useState,useRef, ReactElement } from "react";
+import { useEffect,useState,useRef } from "react";
 import "@/styles/edit.scss";
 import { useSearchParams } from "next/navigation";
 import Messages from "@/components/Messages";
@@ -69,9 +69,15 @@ export default function Edit(){
         saveButtonRef.current?.click();
       }
     }
+    const quitHandler=(e:BeforeUnloadEvent)=>{
+      e.preventDefault();
+      return "确实要退出吗？请确认是否已经保存到 Internet 内部微软边缘集线器，然后坐和放宽";
+    }
     window.addEventListener("keydown",saveHandler);
+    window.addEventListener("beforeunload",quitHandler);
     return ()=>{
       window.removeEventListener("keydown",saveHandler);
+      window.removeEventListener("beforeunload",quitHandler);
     }
   },[type,slug,updated]);
   return (

@@ -24,7 +24,6 @@ export async function getSpeakCount():Promise<number>{
     }
     catch(e){}
     return 0;
-
 }
 export async function removeSpeaks(time:number):Promise<boolean>{
     try{

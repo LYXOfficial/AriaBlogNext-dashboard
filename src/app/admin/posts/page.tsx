@@ -39,7 +39,7 @@ import Link from "next/link";
 import { Post } from "@/interfaces/post";
 import moment from "moment";
 import { BaseDialog,BaseDialogProps, EditPostDialog, EditPostDialogProps } from "@/components/Dialog";
-import { addDraft, getDraftBySlug, getPostBySlug, refreshPostsCache, removePost, updateDraftInfo, updateDraftMarkdown, updatePostInfo } from "@/utils/posts";
+import { addDraft, getDraftBySlug, getPostBySlug, removePost, updateDraftInfo, updateDraftMarkdown, updatePostInfo } from "@/utils/posts";
 import { useRouter } from "nextjs-toploader/app";
 import stringRandom from "string-random";
 

@@ -42,7 +42,6 @@
         padding:10px;
         .fui-Button{
             border: none;
-            margin-right: 5px;
             border-radius: 50%;
             -webkit-border-radius: 50%;
             -moz-border-radius: 50%;
@@ -50,6 +49,9 @@
             -o-border-radius: 50%;
             &[disabled]{
                 background: transparent!important;
+            }
+            &:not(&:last-child){
+                margin-right: 5px;
             }
         }
     }
@@ -92,6 +94,12 @@
         &-topbar{
             position: relative;
             left: -4px;
+        }
+        &-editbar{
+            display: flex;
+            &-separator{
+                flex-grow: 1;
+            }
         }
         &-editor{
             max-width: 100%;
