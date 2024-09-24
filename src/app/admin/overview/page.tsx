@@ -94,11 +94,11 @@ export default function Overview(){
           <span className="overview-count-title">哔哔</span>
           <span className="overview-count-value">{speaksCount==-1?"...":speaksCount}</span>
         </div>
-        <div className="overview-count comments">
+        {/* <div className="overview-count comments">
           <Comment24Regular className="overview-count-icon"/>
           <span className="overview-count-title">评论</span>
           <span className="overview-count-value">{commentCount==-1?"...":commentCount}</span>
-        </div>
+        </div> */}
         <div className="overview-count flinks">
           <Link24Regular className="overview-count-icon"/>
           <span className="overview-count-title">友链</span>

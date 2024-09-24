@@ -61,20 +61,20 @@ const tabs:TabItem[]=[
     link: "/admin/speaks",
     icon: <ChatRegular/>
   },
+  // {
+  //   name: "评论",
+  //   link: "/admin/comments",
+  //   icon: <CommentRegular/>
+  // },
   {
-    name: "评论",
-    link: "/admin/comments",
-    icon: <CommentRegular/>
+    name: "友链",
+    link: "/admin/flinks",
+    icon: <LinkRegular/>
   },
   {
     name: "图床",
     link: "/admin/images",
     icon: <ImageRegular/>
-  },
-  {
-    name: "友链",
-    link: "/admin/flinks",
-    icon: <LinkRegular/>
   },
   {
     name: "设置",
