@@ -21,7 +21,6 @@ import {
   DocumentRegular,
   ImageRegular,
   SettingsRegular,
-  CommentRegular,
   ArrowExitRegular,
   ChartMultipleRegular,
   ChatRegular,
