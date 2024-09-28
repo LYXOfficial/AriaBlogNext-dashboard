@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ReactElement, RefObject, useEffect, useRef, useState } from "react";
 import "@/styles/speaks.scss";
-import { AddRegular, CheckmarkRegular, ComposeRegular, DeleteRegular, DismissRegular, ImageRegular, LinkRegular, TextBoldRegular, TextItalicRegular, TextStrikethroughRegular } from "@fluentui/react-icons";
+import { AddRegular, CheckmarkRegular, CodeRegular, ComposeRegular, DeleteRegular, DismissRegular, ImageRegular, LinkRegular, TextBoldRegular, TextItalicRegular, TextStrikethroughRegular } from "@fluentui/react-icons";
 import moment from "moment";
 import Messages from "@/components/Messages";
 import { BaseDialog, BaseDialogProps } from "@/components/Dialog";
@@ -13,6 +13,7 @@ import { BB } from "@/interfaces/bb";
 import AceEditor from 'react-ace';
 import mime from "mime";
 import { uploadImage } from "@/utils/image";
+import { lightTheme } from "@/utils/theme";
 const imageTypes=["image/png","image/jpeg","image/gif","image/webp","image/bmp","image/x-icon"];
 function BBItem({item,deleteHandler,saveHandler,pasteHandler,uploadWithTip,updated}:{item:BB,deleteHandler:()=>void,saveHandler:(content:string)=>void,pasteHandler:(editorRef:RefObject<AceEditor>,event:ClipboardEvent)=>void,uploadWithTip:(file:File)=>Promise<string>,updated:number}):ReactElement{
   const [editing,setEditing]=useState(false);
@@ -21,9 +22,17 @@ function BBItem({item,deleteHandler,saveHandler,pasteHandler,uploadWithTip,updat
   const saveButtonRef=useRef<HTMLButtonElement>(null);
   const handlePaste=(e:ClipboardEvent)=>{pasteHandler(aceEditorRef,e)};
   const uploadImageInputRef=useRef<HTMLInputElement>(null);
+  const [isLight,setIsLight]=useState(true);
   useEffect(()=>{
+    const mediaQuery=window.matchMedia("(prefers-color-scheme:light)");
+    const handleChange=(e:MediaQueryListEvent)=>{
+      setIsLight(e.matches);
+    };
+    mediaQuery.addEventListener("change",handleChange);
+    setIsLight(mediaQuery.matches);
     return ()=>{
       aceEditorRef.current?.editor?.container.removeEventListener("paste",handlePaste);
+      mediaQuery.removeEventListener("change",handleChange);
     }
   },[]);
   useEffect(()=>{
@@ -152,13 +161,27 @@ function BBItem({item,deleteHandler,saveHandler,pasteHandler,uploadWithTip,updat
                 editor.selection.moveCursorTo(cursorPosition.row,cursorPosition.column-6);
               }
             }}
-            title="删除"
+            title="删除线"
+          />
+          <Button
+            icon={<CodeRegular/>}
+            size="small"
+            onClick={()=>{
+              if(aceEditorRef.current){
+                const editor=aceEditorRef.current?.editor;
+                editor.insert(`<code class="normal-inlinecode">${editor.getSelectedText()}</code>`);
+                editor.focus();
+                const cursorPosition=editor.getCursorPosition();
+                editor.selection.moveCursorTo(cursorPosition.row,cursorPosition.column-7);
+              }
+            }}
+            title="代码块"
           />
         </div>
       </div>
       <AceEditor
         mode="html"
-        theme="xcode"
+        theme={isLight?"xcode":"one_dark"}
         className="speaks-item-editor"
         style={{display:editing?"block":"none"}}
         wrapEnabled={true}
@@ -213,9 +236,17 @@ function NewBBItem({item,saveHandler,pasteHandler,uploadWithTip}:{item:BB,saveHa
   const saveButtonRef=useRef<HTMLButtonElement>(null);
   const handlePaste=(e:ClipboardEvent)=>{pasteHandler(aceEditorRef,e)};
   const uploadImageInputRef=useRef<HTMLInputElement>(null);
+  const [isLight,setIsLight]=useState(true);
   useEffect(()=>{
-    setTimeout(()=>aceEditorRef.current?.editor?.focus(),10)
+    setTimeout(()=>aceEditorRef.current?.editor?.focus(),10);
+    const mediaQuery=window.matchMedia("(prefers-color-scheme:light)");
+    const handleChange=(e:MediaQueryListEvent)=>{
+      setIsLight(e.matches);
+    };
+    mediaQuery.addEventListener("change",handleChange);
+    setIsLight(mediaQuery.matches);
     return ()=>{
+      mediaQuery.removeEventListener("change",handleChange);
       aceEditorRef.current?.editor?.container.removeEventListener("paste",handlePaste);
     }
   },[]);
@@ -324,13 +355,27 @@ function NewBBItem({item,saveHandler,pasteHandler,uploadWithTip}:{item:BB,saveHa
                 editor.selection.moveCursorTo(cursorPosition.row,cursorPosition.column-6);
               }
             }}
-            title="删除"
+            title="删除线"
+          />
+          <Button
+            icon={<CodeRegular/>}
+            size="small"
+            onClick={()=>{
+              if(aceEditorRef.current){
+                const editor=aceEditorRef.current?.editor;
+                editor.insert(`<code class="normal-inlinecode">${editor.getSelectedText()}</code>`);
+                editor.focus();
+                const cursorPosition=editor.getCursorPosition();
+                editor.selection.moveCursorTo(cursorPosition.row,cursorPosition.column-7);
+              }
+            }}
+            title="代码块"
           />
         </div>
       </div>
       <AceEditor
         mode="html"
-        theme="xcode"
+        theme={isLight?"xcode":"one_dark"}
         className="speaks-item-editor"
         wrapEnabled={true}
         ref={aceEditorRef}
@@ -446,6 +491,7 @@ export default function Page(){
   useEffect(()=>{
     import('ace-builds/src-noconflict/mode-html');
     import('ace-builds/src-noconflict/theme-xcode');
+    import('ace-builds/src-noconflict/theme-one_dark');
     import('ace-builds/src-noconflict/ext-language_tools');
   },[]);
   useEffect(()=>{(async ()=>{

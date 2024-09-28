@@ -13,7 +13,6 @@ const Vditor=forwardRef(({ content }:{ content:string|undefined },ref)=>{
     if(mediaQuery.matches) vd?.setTheme("dark","dark");
     else vd?.setTheme("classic","light");
     const handleChange=(e:MediaQueryListEvent)=>{
-      console.log(1);
       if(e.matches) vd?.setTheme("dark","dark");
       else vd?.setTheme("classic","light");
     };
