@@ -40,13 +40,15 @@ const Vditor=forwardRef(({ content }:{ content:string|undefined },ref)=>{
               tmplist.push(`![图片上传中${stringRandom()}]()`);
             }
             (async ()=>{
+              let flag=true;
               (await Promise.all(
                 files.map(async(file)=>await uploadImage(file))
               )).map((url,i)=>{
-                if(!url.length) vditor.setValue(vditor.getValue().replace(tmplist[i]+"\n",""));
+                if(!url.length) vditor.setValue(vditor.getValue().replace(tmplist[i]+"\n","")),flag=false;
                 else vditor.setValue(vditor.getValue().replace(tmplist[i],`![](${url})`));
               });
-              vditor.tip("上传成功",1000);
+              if(flag) vditor.tip("上传成功",1000);
+              else vditor.tip("上传失败",1000);
             })();
             document.execCommand("insertHTML",false,tmplist.join("\n"));
             return "上传中...";
