@@ -43,8 +43,8 @@ const Vditor=forwardRef(({ content }:{ content:string|undefined },ref)=>{
               (await Promise.all(
                 files.map(async(file)=>await uploadImage(file))
               )).map((url,i)=>{
-                if(!url.length) vditor.tip("上传失败",1000);
-                vditor.setValue(vditor.getValue().replace(tmplist[i],`![](${url})`));
+                if(!url.length) vditor.setValue(vditor.getValue().replace(tmplist[i]+"\n",""));
+                else vditor.setValue(vditor.getValue().replace(tmplist[i],`![](${url})`));
               });
               vditor.tip("上传成功",1000);
             })();
