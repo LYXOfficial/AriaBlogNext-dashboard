@@ -25,8 +25,11 @@ export declare interface Message{
   intent:MessageBarIntent;
   id:number;
 }
+export declare interface MessagesRef {
+  addMessage:(title:string,content:string,intent:MessageBarIntent)=>void;
+}
 
-const Messages=forwardRef((props:any,ref:any)=>{
+const Messages=forwardRef<MessagesRef>((_,ref)=>{
   const counterRef=useRef(0);
   const [animate,setAnimate]=useState<MessageBarGroupProps["animate"]>("both");
   const [messages,setMessages]=useState<Message[]>([]);

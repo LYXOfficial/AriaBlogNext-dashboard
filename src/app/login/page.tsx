@@ -9,14 +9,15 @@ import { useRef,useState,useEffect } from "react";
 import { useRouter } from "nextjs-toploader/app";
 import { config } from "@/dashboardConfig";
 import verifyToken from "@/utils/access";
-import Messages from "@/components/Messages";
+import Messages, { MessagesRef } from "@/components/Messages";
 import NoSSR from "@/components/NoSSR";
+import React from "react";
 
 export default function Page(){
   const userRef=useRef<HTMLInputElement>(null);
   const pwdRef=useRef<HTMLInputElement>(null);
   const submitRef=useRef<HTMLButtonElement>(null);
-  const messageBarRef=useRef<any>(null);
+  const messageBarRef=useRef<MessagesRef>(null);
   const [logining,setLogining]=useState(false);
   const router=useRouter();
   useEffect(()=>{(async ()=>{

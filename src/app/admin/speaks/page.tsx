@@ -7,13 +7,13 @@ import { ReactElement, RefObject, useEffect, useRef, useState } from "react";
 import "@/styles/speaks.scss";
 import { AddRegular, CheckmarkRegular, CodeRegular, ComposeRegular, DeleteRegular, DismissRegular, ImageRegular, LinkRegular, TextBoldRegular, TextItalicRegular, TextStrikethroughRegular } from "@fluentui/react-icons";
 import moment from "moment";
-import Messages from "@/components/Messages";
+import Messages, { MessagesRef } from "@/components/Messages";
 import { BaseDialog, BaseDialogProps } from "@/components/Dialog";
 import { BB } from "@/interfaces/bb";
 import AceEditor from 'react-ace';
 import mime from "mime";
 import { uploadImage } from "@/utils/image";
-import { lightTheme } from "@/utils/theme";
+import React from "react";
 const imageTypes=["image/png","image/jpeg","image/gif","image/webp","image/bmp","image/x-icon"];
 function BBItem({item,deleteHandler,saveHandler,pasteHandler,uploadWithTip,updated}:{item:BB,deleteHandler:()=>void,saveHandler:(content:string)=>void,pasteHandler:(editorRef:RefObject<AceEditor>,event:ClipboardEvent)=>void,uploadWithTip:(file:File)=>Promise<string>,updated:number}):ReactElement{
   const [editing,setEditing]=useState(false);
@@ -423,7 +423,7 @@ export default function Page(){
   const [speakCount,setSpeakCount]=useState(-1);
   const [cols,setCols]=useState(1);
   const [updated,setUpdated]=useState(0);
-  const messageBarRef=useRef<any>(null);
+  const messageBarRef=useRef<MessagesRef>(null);
   const searchParams=useSearchParams();
   const page=searchParams.get("page")?parseInt(searchParams.get("page")!):1;
   const maxPage=Math.ceil(speakCount/30);

@@ -5,10 +5,11 @@ import {
   useRef,
   useState,
   ReactNode,
+  RefObject,
 } from "react";
 import { usePathname } from "next/navigation";
 import { useRouter } from "nextjs-toploader/app";
-import Messages from "@/components/Messages";
+import Messages, { MessagesRef } from "@/components/Messages";
 import verifyToken, { exitLogin } from "@/utils/access";
 import {
   TabList,
@@ -28,6 +29,7 @@ import {
 import NoSSR from "@/components/NoSSR";
 import "@/styles/admin.scss";
 import { BaseDialog,BaseDialogProps } from "@/components/Dialog";
+import React from "react";
 
 declare interface TabItem{
   name:string;
@@ -88,7 +90,7 @@ export default function Page({
 }>){
   const router=useRouter();
   const path=usePathname();
-  const messageBarRef=useRef<any>(null);
+  const messageBarRef=useRef<MessagesRef>(null);
   const [selectedTabLink,setSelectedTabLink]=useState<string>(`/admin/${path.split("/")[2]}`);
   const [dialogState,setDialogState]=useState<BaseDialogProps>({
     title:"",

@@ -15,7 +15,7 @@ import {
   Textarea,
 } from "@fluentui/react-components";
 import { Post } from "@/interfaces/post";
-import { ChangeEvent, ReactElement, useEffect, useRef, useState } from "react";
+import { ChangeEvent, FC, ReactElement, useEffect, useRef, useState } from "react";
 import { getCategories, getTags } from "@/utils/posts";
 import { ArrowUploadRegular, Dismiss12Regular } from "@fluentui/react-icons";
 import { uploadImage } from "@/utils/image";
@@ -294,7 +294,7 @@ export const EditPostDialog=(
               <Combobox 
                 required
                 value={currentPostInfo.category??""}
-                selectedOptions={categories.map(item=>(item as any).key).includes(currentPostInfo.category)?[currentPostInfo.category!]:[]}
+                selectedOptions={categories.map(item=>(item as ReactElement<{key:string}>).key).includes(currentPostInfo.category!)?[currentPostInfo.category!]:[]}
                 freeform
                 onInput={(e:ChangeEvent<HTMLInputElement>)=>{
                   setCurrentPostInfo({
