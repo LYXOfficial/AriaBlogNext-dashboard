@@ -3,6 +3,7 @@ import Vd from "vditor";
 import "vditor/dist/index.css";
 import "@/styles/vditor.scss";
 import { uploadImage } from "@/utils/image";
+import stringRandom from "string-random";
 const Vditor=forwardRef(({ content }:{ content:string|undefined },ref)=>{
   const [vd,setVd]=useState<Vd>();
   useImperativeHandle(ref,()=>({
@@ -34,17 +35,20 @@ const Vditor=forwardRef(({ content }:{ content:string|undefined },ref)=>{
         upload:{
           max: 4.5*1024*1024,
           handler(files){
+            const tmplist:string[]=[];
+            for(let i=0;i<files.length;i++){
+              tmplist.push(`![图片上传中${stringRandom()}]()`);
+            }
             (async ()=>{
-              const res=(await Promise.all(
-                files.map(async(file)=>await uploadImage(file))))
-                  .map(url=>{
-                    if(!url) vditor.tip("上传失败",1000);
-                    return `![](${url})`
-                  })
-                  .join("\n");
-              document.execCommand("insertHTML",false,res);
+              (await Promise.all(
+                files.map(async(file)=>await uploadImage(file))
+              )).map((url,i)=>{
+                if(!url.length) vditor.tip("上传失败",1000);
+                vditor.setValue(vditor.getValue().replace(tmplist[i],`![](${url})`));
+              });
               vditor.tip("上传成功",1000);
             })();
+            document.execCommand("insertHTML",false,tmplist.join("\n"));
             return "上传中...";
           }
         }
