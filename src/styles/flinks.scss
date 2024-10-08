@@ -1,0 +1,87 @@
+.flink{
+    &-list{
+        display: flex;
+        flex-wrap: wrap;
+        gap:15px;
+        justify-content: space-between;
+        padding:10px;
+    }
+    &-group{
+        &-header{
+            display: flex;
+            flex-direction: column;
+        }
+        &-descr{
+            margin-bottom: 10px;
+        }
+    }
+    &-item{
+        width: calc(33% - 10px);
+        background-color: var(--colorNeutralBackground1);
+        padding:20px;
+        border-radius: 15px;
+        box-sizing: border-box;
+        box-shadow: 0 0 10px #00000021;
+        display: grid;
+        grid-template-rows: 27px 27px 27px calc(100% - 81px);
+        grid-template-columns: 95px calc(100% - 95px);
+        @media screen and (max-width:900px){
+            width: calc(50% - 10px);
+        }
+        @media screen and (max-width:600px){
+            width: calc(100% - 10px);
+        }
+        &-link{
+            font-size: 20px;
+            text-decoration: none;
+            color:var(--colorNeutralForeground1);
+            font-weight: 700;
+            font-family: "Noto Serif SC";
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            transition: .3s;
+            &:hover{
+                color: var(--colorBrandBackground)!important;
+            }
+        }
+        &-descr{
+            grid-row: 4;
+            grid-column-start: 1;
+            grid-column-end: 3;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-top: 5px;
+        }
+        &-avatar{
+            width: 80px;
+            height: 80px;
+            border-radius: 10%;
+            overflow: hidden;
+            grid-column: 1;
+            grid-row-start: 1;
+            grid-row-end: 4;
+            margin-right: 15px;
+            &>&-img{
+                object-fit: cover;
+                width: 80px;
+                height: 80px;
+            }
+        }
+        &-color{
+            display: flex;
+            align-items: center;
+            &-text{
+                font-size: 16px;
+                font-family: Consolas, monospace;
+            }
+            &-box{
+                margin-right: 5px;
+                width: 12px;
+                height: 12px;
+                border: 1px solid gray;
+            }
+        }
+    }
+}

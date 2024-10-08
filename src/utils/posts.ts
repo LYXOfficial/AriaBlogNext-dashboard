@@ -1,5 +1,5 @@
 import { config } from "@/dashboardConfig";
-import {pushUpdateTime} from "./siteinfo";
+import { pushUpdateTime } from "./siteinfo";
 import { Post } from "@/interfaces/post";
 import moment from "moment";
 
