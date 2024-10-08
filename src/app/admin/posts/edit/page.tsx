@@ -1,8 +1,8 @@
 "use client";
-import { useEffect,useState,useRef } from "react";
+import { useEffect,useState,useRef, RefObject } from "react";
 import "@/styles/edit.scss";
 import { useSearchParams } from "next/navigation";
-import Messages from "@/components/Messages";
+import Messages, { MessagesRef } from "@/components/Messages";
 import { BaseDialog,BaseDialogProps, EditPostDialog, EditPostDialogProps } from "@/components/Dialog";
 import { useRouter } from "nextjs-toploader/app";
 import { Button, Label } from "@fluentui/react-components";
@@ -18,12 +18,13 @@ import { addDraft, addPost, getDraftBySlug, getPostBySlug, removeDraft, updateDr
 import { config } from "@/dashboardConfig";
 import Vditor from "@/components/Vditor";
 import moment from "moment";
+import React from "react";
 
 export default function Edit(){
   const searchParams=useSearchParams();
   const type=searchParams.get("type");
   const slug=searchParams.get("slug");
-  const messageBarRef=useRef<any>(null);
+  const messageBarRef=useRef<MessagesRef>(null);
   const router=useRouter();
   const [dialogState,setDialogState]=useState<BaseDialogProps>({
     title:"",
@@ -44,7 +45,7 @@ export default function Edit(){
   const [saving,setSaving]=useState(false);
   const [saveAsing,setSaveAsing]=useState(false);
   const saveButtonRef=useRef<HTMLButtonElement>(null);
-  const vditorRef=useRef<any>(null);
+  const vditorRef=useRef<{getMarkdown:()=>string}>(null);
   useEffect(()=>{
     let r:Post;
     if(type=="post")
@@ -115,7 +116,7 @@ export default function Edit(){
               }
               console.log(vditorRef.current?.getMarkdown());
               if(type=="post"){
-                if(await updatePostMarkdown(vditorRef.current?.getMarkdown(),slug!)){
+                if(await updatePostMarkdown(vditorRef.current?.getMarkdown()!,slug!)){
                   if(await updatePostInfo({...currentPostInfo,lastUpdatedTime:moment().unix()})){
                     success();
                     setUpdated(updated+1);
@@ -127,7 +128,7 @@ export default function Edit(){
                 }
               }
               else if(type=="draft"){
-                if(await updateDraftMarkdown(vditorRef.current?.getMarkdown(),slug!)){
+                if(await updateDraftMarkdown(vditorRef.current?.getMarkdown()!,slug!)){
                   if(await updateDraftInfo({...currentPostInfo,lastUpdatedTime:moment().unix()})){
                     success();
                   }
@@ -160,7 +161,7 @@ export default function Edit(){
                 }
                 if(type=="post"){
                   if(await addDraft({...currentPostInfo,lastUpdatedTime:moment().unix()})){
-                    if(await updateDraftMarkdown(vditorRef?.current?.getMarkdown(),slug!)){
+                    if(await updateDraftMarkdown(vditorRef?.current?.getMarkdown()!,slug!)){
                       success();
                     }
                     else failed();
@@ -178,7 +179,7 @@ export default function Edit(){
                             open:false
                           });
                           if(await updateDraftInfo({...currentPostInfo,lastUpdatedTime:moment().unix()})){
-                            if(await updateDraftMarkdown(vditorRef?.current?.getMarkdown(),slug!)){
+                            if(await updateDraftMarkdown(vditorRef?.current?.getMarkdown()!,slug!)){
                               success();
                             }
                             else failed();
@@ -198,7 +199,7 @@ export default function Edit(){
                 }
                 else{
                   if(await addPost({...currentPostInfo,lastUpdatedTime:moment().unix()})){
-                    if(await updatePostMarkdown(vditorRef?.current?.getMarkdown(),slug!)){
+                    if(await updatePostMarkdown(vditorRef?.current?.getMarkdown()!,slug!)){
                       success();
                     }
                     else failed();
@@ -216,7 +217,7 @@ export default function Edit(){
                             open:false
                           });
                           if(await updatePostInfo({...currentPostInfo,lastUpdatedTime:moment().unix()})){
-                            if(await updatePostMarkdown(vditorRef?.current?.getMarkdown(),slug!)){
+                            if(await updatePostMarkdown(vditorRef?.current?.getMarkdown()!,slug!)){
                               if(await removeDraft(slug!))
                                 success();
                               else failed();

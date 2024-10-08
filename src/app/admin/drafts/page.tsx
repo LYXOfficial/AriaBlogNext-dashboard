@@ -34,7 +34,7 @@ import {
   createTableColumn,
   SearchBox,
 } from "@fluentui/react-components";
-import Messages from "@/components/Messages";
+import Messages, { MessagesRef } from "@/components/Messages";
 import Link from "next/link";
 import { Post } from "@/interfaces/post";
 import moment from "moment";
@@ -42,6 +42,7 @@ import { BaseDialog,BaseDialogProps, EditPostDialog, EditPostDialogProps } from 
 import { addDraft, addPost, getDraftBySlug, getPostBySlug, removeDraft, removePost, updateDraftInfo, updateDraftMarkdown, updatePostInfo, updatePostMarkdown } from "@/utils/posts";
 import { useRouter } from "nextjs-toploader/app";
 import stringRandom from "string-random";
+import React from "react";
 
 const columns:TableColumnDefinition<Post>[]=[
   createTableColumn<Post>({
@@ -70,7 +71,7 @@ export default function Drafts(){
   const page=searchParams.get("page")?parseInt(searchParams.get("page")!):1;
   const query=searchParams.get("query")??"";
   const maxPage=Math.ceil(postCount/20);
-  const messageBarRef=useRef<any>(null);
+  const messageBarRef=useRef<MessagesRef>(null);
   const router=useRouter();
   const [dialogState,setDialogState]=useState<BaseDialogProps>({
     title:"",
