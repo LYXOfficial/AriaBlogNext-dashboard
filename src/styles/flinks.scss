@@ -1,51 +1,75 @@
-.flink{
-    &-list{
+.flink {
+    &-list {
         display: flex;
         flex-wrap: wrap;
-        gap:15px;
+        gap: 15px;
         justify-content: space-between;
-        padding:10px;
+        padding: 10px;
     }
-    &-group{
-        &-header{
+
+    &-group {
+        &-header {
             display: flex;
-            flex-direction: column;
+            flex-wrap: wrap;
         }
-        &-descr{
+
+        &-descr {
             margin-bottom: 10px;
+            width: 100%;
+        }
+        &-addlinkbtn{
+            height: fit-content;
+            margin-right: auto;
+            margin-top: 12px;
         }
     }
-    &-item{
+
+    &-item {
         width: calc(33% - 10px);
         background-color: var(--colorNeutralBackground1);
-        padding:20px;
+        padding: 20px;
         border-radius: 15px;
         box-sizing: border-box;
         box-shadow: 0 0 10px #00000021;
         display: grid;
         grid-template-rows: 27px 27px 27px calc(100% - 81px);
         grid-template-columns: 95px calc(100% - 95px);
-        @media screen and (max-width:900px){
+        position: relative;
+
+        @media screen and (max-width: 900px) {
             width: calc(50% - 10px);
         }
-        @media screen and (max-width:600px){
+
+        @media screen and (max-width: 600px) {
             width: calc(100% - 10px);
         }
-        &-link{
+
+        &-name {
             font-size: 20px;
             text-decoration: none;
-            color:var(--colorNeutralForeground1);
+            color: var(--colorNeutralForeground1);
             font-weight: 700;
             font-family: "Noto Serif SC";
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            transition: .3s;
-            &:hover{
-                color: var(--colorBrandBackground)!important;
+            align-items: center;
+            display: flex;
+            height: fit-content;
+            &-edit{
+                width: calc(100% - 20px);
+                font-size: 14px;
+                line-height: 14px;
+            }
+            &-text {
+                flex: 1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
         }
-        &-descr{
+
+        &-descr {
             grid-row: 4;
             grid-column-start: 1;
             grid-column-end: 3;
@@ -53,8 +77,15 @@
             text-overflow: ellipsis;
             white-space: nowrap;
             margin-top: 5px;
+            display: flex;
+            &-edit {
+                width:100%;
+                font-size: 14px;
+                line-height: 14px;
+            }
         }
-        &-avatar{
+
+        &-avatar {
             width: 80px;
             height: 80px;
             border-radius: 10%;
@@ -63,24 +94,66 @@
             grid-row-start: 1;
             grid-row-end: 4;
             margin-right: 15px;
-            &>&-img{
+
+            &>&-img {
                 object-fit: cover;
                 width: 80px;
                 height: 80px;
             }
         }
-        &-color{
-            display: flex;
-            align-items: center;
-            &-text{
+
+        &-color {
+
+            &-text {
                 font-size: 16px;
                 font-family: Consolas, monospace;
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
             }
-            &-box{
+
+            &-box {
                 margin-right: 5px;
-                width: 12px;
-                height: 12px;
+                width: 16px;
+                height: 16px;
                 border: 1px solid gray;
+                outline: none;
+                padding:0;
+            }
+        }
+        &-latency{
+            margin-left:5px;
+        }
+
+        &-button {
+            color: var(--colorNeutralForeground1);
+            transition: .3s;
+            border: none;
+            background: none;
+            cursor: pointer;
+            padding:0;
+            width:20px;
+            height:20px;
+            &.open{
+                position: absolute;
+                right: 15px;
+                top: 15px;
+            }
+            &.delete{
+                position: absolute;
+                right: 15px;
+                top: 40px;
+                color: red;
+                &:hover{
+                    color: gray;
+                }
+            }
+            svg{
+                width:20px;
+                height:20px;
+            }
+            &:hover{
+                color: var(--colorBrandForegroundInverted);
             }
         }
     }
