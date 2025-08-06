@@ -33,6 +33,7 @@ import {
   Label,
   Dropdown,
   Option,
+  SpinButton,
 } from "@fluentui/react-components";
 import { BaseDialog } from "@/components/Dialog";
 import Messages, { MessagesRef } from "@/components/Messages";
@@ -69,6 +70,7 @@ export default function Flinks() {
     groupIdx: number;
     name: string;
     description: string;
+    order?: number;
   } | null>(null);
   const [deleteGroupIdx, setDeleteGroupIdx] = useState<number | null>(null);
   const [deleteLinkInfo, setDeleteLinkInfo] = useState<{
@@ -78,6 +80,7 @@ export default function Flinks() {
   const [newGroupDialogOpen, setNewGroupDialogOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDesc, setNewGroupDesc] = useState("");
+  const [newOrder, setNewOrder] = useState(0);
   const [moveLinkInfo, setMoveLinkInfo] = useState<{
     groupIdx: number;
     linkIdx: number;
@@ -85,18 +88,23 @@ export default function Flinks() {
   const [moveTargetGroup, setMoveTargetGroup] = useState<number | null>(null);
   const [editing, setEditing] = useState<number>(0);
   const messageBarRef = useRef<MessagesRef>(null);
-  const [urlEditing, setUrlEditing] = useState<{ groupIdx: number; linkIdx: number } | null>(null);
+  const [urlEditing, setUrlEditing] = useState<{
+    groupIdx: number;
+    linkIdx: number;
+  } | null>(null);
   const [urlEditValue, setUrlEditValue] = useState("");
 
   useEffect(() => {
     (async () => {
-      setFLinks(await getFlinks());
+      // 拉取后排序
+      const groups = await getFlinks();
+      setFLinks(groups.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
     })();
   }, []);
   useEffect(() => {
     const lazyLoadInstance = new LazyLoad({ elements_selector: ".lazy-img" });
     lazyLoadInstance.update();
-  }, [fLinks, editing]);
+  }, [fLinks, editing, nameEditing, colorEditing, descrEditing, avatarEditing, urlEditing]);
 
   const handleEdit = (groupIdx: number, linkIdx: number, name: string) => {
     setNameEditing({ groupIdx, linkIdx });
@@ -249,7 +257,11 @@ export default function Flinks() {
         }}
         onConfirm={async () => {
           if (!isValidUrl(avatarInput)) {
-            messageBarRef.current?.addMessage("错误", "请输入合法的图片链接（以 http:// 或 https:// 开头）", "error");
+            messageBarRef.current?.addMessage(
+              "错误",
+              "请输入合法的图片链接（以 http:// 或 https:// 开头）",
+              "error"
+            );
             return;
           }
           if (avatarEditing) {
@@ -293,7 +305,7 @@ export default function Flinks() {
                 src={avatarInput}
                 alt="预览"
                 style={{ width: 36, height: 36, borderRadius: "50%" }}
-                onError={e => (e.currentTarget.src = config.falldownAvatar)}
+                onError={(e) => (e.currentTarget.src = config.falldownAvatar)}
               />
             )}
             <Input
@@ -333,19 +345,23 @@ export default function Flinks() {
             const ok = await updateGroup(
               oldName,
               groupEditing.name,
-              groupEditing.description
+              groupEditing.description,
+              groupEditing.order ?? 0
             );
             if (ok) {
               setFLinks((prev) =>
-                prev.map((group, gi) =>
-                  gi === groupEditing.groupIdx
-                    ? {
-                        ...group,
-                        name: groupEditing.name,
-                        description: groupEditing.description,
-                      }
-                    : group
-                )
+                prev
+                  .map((group, gi) =>
+                    gi === groupEditing.groupIdx
+                      ? {
+                          ...group,
+                          name: groupEditing.name,
+                          description: groupEditing.description,
+                          order: groupEditing.order ?? 0,
+                        }
+                      : group
+                  )
+                  .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
               );
               messageBarRef.current?.addMessage(
                 "提示",
@@ -384,6 +400,20 @@ export default function Flinks() {
                 placeholder="分组描述"
                 style={{ width: "100%" }}
               />
+              <Label>分组排序</Label>
+              <SpinButton
+                defaultValue={groupEditing.order ?? 0}
+                max={1919810}
+                min={-1919810}
+                onChange={(_, data) =>
+                  setGroupEditing({
+                    ...groupEditing,
+                    order: Number(data.displayValue ?? 0),
+                  })
+                }
+                placeholder="分组排序"
+                style={{ width: "100%", boxSizing: "border-box" }}
+              />
             </div>
           )
         }
@@ -420,20 +450,37 @@ export default function Flinks() {
           setNewGroupDialogOpen(false);
           setNewGroupName("");
           setNewGroupDesc("");
+          setNewOrder(
+            fLinks.length > 0
+              ? Math.max(...fLinks.map((g) => g.order ?? 0))
+              : 0 + 1
+          );
           setEditing(Math.random());
         }}
         onConfirm={async () => {
           if (newGroupName.trim()) {
-            const ok = await addGroup(newGroupName.trim(), newGroupDesc.trim());
+            setNewOrder(
+              fLinks.length > 0
+                ? Math.max(...fLinks.map((g) => g.order ?? 0))
+                : 0 + 1
+            );
+            const ok = await addGroup(
+              newGroupName.trim(),
+              newGroupDesc.trim(),
+              newOrder
+            );
             if (ok) {
-              setFLinks((prev) => [
-                ...prev,
-                {
-                  name: newGroupName.trim(),
-                  description: newGroupDesc.trim(),
-                  links: [],
-                },
-              ]);
+              setFLinks((prev) =>
+                [
+                  ...prev,
+                  {
+                    name: newGroupName.trim(),
+                    description: newGroupDesc.trim(),
+                    links: [],
+                    order: newOrder,
+                  },
+                ].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+              );
               setNewGroupDialogOpen(false);
               setNewGroupName("");
               setNewGroupDesc("");
@@ -467,6 +514,19 @@ export default function Flinks() {
               onChange={(_, data) => setNewGroupDesc(data.value)}
               placeholder="分组描述"
               style={{ width: "100%" }}
+            />
+            <Label>分组排序</Label>
+            <SpinButton
+              defaultValue={
+                fLinks.length > 0
+                  ? Math.max(...fLinks.map((g) => g.order ?? 0))
+                  : 0 + 1
+              }
+              max={1919810}
+              min={-1919810}
+              onChange={(_, data) => setNewOrder(Number(data.displayValue ?? 0))}
+              placeholder="分组排序"
+              style={{ width: "100%", boxSizing: "border-box" }}
             />
           </div>
         }
@@ -559,7 +619,11 @@ export default function Flinks() {
         }}
         onConfirm={async () => {
           if (!isValidUrl(urlEditValue)) {
-            messageBarRef.current?.addMessage("错误", "请输入合法的链接（以 http:// 或 https:// 开头）", "error");
+            messageBarRef.current?.addMessage(
+              "错误",
+              "请输入合法的链接（以 http:// 或 https:// 开头）",
+              "error"
+            );
             return;
           }
           if (urlEditing) {
@@ -568,7 +632,7 @@ export default function Flinks() {
             const updated = { ...link, url: urlEditValue };
             const ok = await updateFlink(group.name, updated);
             if (ok) {
-              setFLinks(prev =>
+              setFLinks((prev) =>
                 prev.map((g, gi) =>
                   gi === urlEditing.groupIdx
                     ? {
@@ -580,9 +644,17 @@ export default function Flinks() {
                     : g
                 )
               );
-              messageBarRef.current?.addMessage("提示", "链接修改成功", "success");
+              messageBarRef.current?.addMessage(
+                "提示",
+                "链接修改成功",
+                "success"
+              );
             } else {
-              messageBarRef.current?.addMessage("错误", "链接修改失败", "error");
+              messageBarRef.current?.addMessage(
+                "错误",
+                "链接修改失败",
+                "error"
+              );
             }
             setUrlEditing(null);
             setEditing(Math.random());
@@ -605,6 +677,11 @@ export default function Flinks() {
             appearance="primary"
             icon={<Add16Regular />}
             onClick={() => {
+              setNewOrder(
+                fLinks.length > 0
+                  ? Math.max(...fLinks.map((g) => g.order ?? 0))
+                  : 0 + 1
+              );
               setNewGroupDialogOpen(true);
               setEditing(Math.random());
             }}
@@ -612,83 +689,88 @@ export default function Flinks() {
             新建分组
           </Button>
         </div>
-        {fLinks.map((item, groupIdx) => (
-          <div className="flink-group" key={item.name}>
-            <div className="flink-group-header">
-              <h2
-                className="flink-group-title"
-                style={{ display: "inline-block", marginRight: 8 }}
-              >
-                {item.name}
-              </h2>
-              <Button
-                appearance="subtle"
-                size="small"
-                icon={<EditFilled />}
-                aria-label="编辑分组"
-                onClick={() => {
-                  setGroupEditing({
-                    groupIdx,
-                    name: item.name,
-                    description: item.description || "",
-                  });
-                  setEditing(Math.random());
-                }}
-                style={{ verticalAlign: "middle" }}
-              />
-              <Button
-                appearance="subtle"
-                size="small"
-                icon={<DeleteRegular />}
-                aria-label="删除分组"
-                onClick={() => {
-                  setDeleteGroupIdx(groupIdx);
-                  setEditing(Math.random());
-                }}
-                style={{ verticalAlign: "middle", marginLeft: 4 }}
-              />
-              <span className="flink-group-descr">{item.description}</span>
-            </div>
-            <div className="flink-list">
-              {item.links.map((link, linkIdx) => {
-                let linkLatencyColor = "";
-                if (link.latency! > 0) {
-                  if (link.latency! < 1) linkLatencyColor = "green";
-                  else if (link.latency! < 2) linkLatencyColor = "yellowgreen";
-                  else if (link.latency! < 5) linkLatencyColor = "goldenrod";
-                  else linkLatencyColor = "orangered";
-                } else if (link.latency) {
-                  linkLatencyColor = "#bd2a2a";
-                }
-                const isEditing =
-                  nameEditing &&
-                  nameEditing.groupIdx === groupIdx &&
-                  nameEditing.linkIdx === linkIdx;
-                const isColorEditing =
-                  colorEditing &&
-                  colorEditing.groupIdx === groupIdx &&
-                  colorEditing.linkIdx === linkIdx;
-                const isDescrEditing =
-                  descrEditing &&
-                  descrEditing.groupIdx === groupIdx &&
-                  descrEditing.linkIdx === linkIdx;
-                return (
-                  <div className="flink-item" key={link.name}>
-                    {/* 头像渲染 */}
-                    <div
-                      className="flink-item-avatar"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => {
-                        setAvatarEditing({
-                          groupIdx,
-                          linkIdx,
-                          avatar: link.avatar,
-                        });
-                        setAvatarInput(link.avatar || "");
-                        setEditing(Math.random());
-                      }}
-                      dangerouslySetInnerHTML={{
-                        __html: `
+        {fLinks
+          .slice()
+          .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+          .map((item, groupIdx) => (
+            <div className="flink-group" key={item.name}>
+              <div className="flink-group-header">
+                <h2
+                  className="flink-group-title"
+                  style={{ display: "inline-block", marginRight: 8 }}
+                >
+                  {item.name}
+                </h2>
+                <Button
+                  appearance="subtle"
+                  size="small"
+                  icon={<EditFilled />}
+                  aria-label="编辑分组"
+                  onClick={() => {
+                    setGroupEditing({
+                      groupIdx,
+                      name: item.name,
+                      description: item.description || "",
+                      order: item.order ?? 0, // 必须加上
+                    });
+                    setEditing(Math.random());
+                  }}
+                  style={{ verticalAlign: "middle" }}
+                />
+                <Button
+                  appearance="subtle"
+                  size="small"
+                  icon={<DeleteRegular />}
+                  aria-label="删除分组"
+                  onClick={() => {
+                    setDeleteGroupIdx(groupIdx);
+                    setEditing(Math.random());
+                  }}
+                  style={{ verticalAlign: "middle", marginLeft: 4 }}
+                />
+                <span className="flink-group-descr">{item.description}</span>
+              </div>
+              <div className="flink-list">
+                {item.links.map((link, linkIdx) => {
+                  let linkLatencyColor = "";
+                  if (link.latency! > 0) {
+                    if (link.latency! < 1) linkLatencyColor = "green";
+                    else if (link.latency! < 2)
+                      linkLatencyColor = "yellowgreen";
+                    else if (link.latency! < 5) linkLatencyColor = "goldenrod";
+                    else linkLatencyColor = "orangered";
+                  } else if (link.latency) {
+                    linkLatencyColor = "#bd2a2a";
+                  }
+                  const isEditing =
+                    nameEditing &&
+                    nameEditing.groupIdx === groupIdx &&
+                    nameEditing.linkIdx === linkIdx;
+                  const isColorEditing =
+                    colorEditing &&
+                    colorEditing.groupIdx === groupIdx &&
+                    colorEditing.linkIdx === linkIdx;
+                  const isDescrEditing =
+                    descrEditing &&
+                    descrEditing.groupIdx === groupIdx &&
+                    descrEditing.linkIdx === linkIdx;
+                  return (
+                    <div className="flink-item" key={link.name}>
+                      {/* 头像渲染 */}
+                      <div
+                        className="flink-item-avatar"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => {
+                          setAvatarEditing({
+                            groupIdx,
+                            linkIdx,
+                            avatar: link.avatar,
+                          });
+                          setAvatarInput(link.avatar || "");
+                          setEditing(Math.random());
+                        }}
+                        dangerouslySetInnerHTML={{
+                          __html: `
                             <img 
                                 class="flink-item-avatar-img lazy-img" 
                                 src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" 
@@ -697,338 +779,340 @@ export default function Flinks() {
                                 onerror="this.src='${config.falldownAvatar}';"
                             />
                           `,
-                      }}
-                    />
+                        }}
+                      />
 
-                    <span className="flink-item-name">
-                      {isEditing ? (
-                        <Input
-                          value={nameEditValue}
-                          onChange={(_, data) => setNameEditValue(data.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleEditConfirm();
-                            if (e.key === "Escape") handleEditCancel();
-                          }}
-                          className="flink-item-name-edit"
-                          autoFocus
-                          size="small"
-                          contentAfter={
-                            <>
-                              <Button
-                                appearance="subtle"
-                                size="small"
-                                icon={<Checkmark16Regular />}
-                                onClick={handleEditConfirm}
-                                aria-label="确认"
-                              />
-                              <Button
-                                appearance="subtle"
-                                size="small"
-                                icon={<Dismiss16Regular />}
-                                onClick={handleEditCancel}
-                                aria-label="取消"
-                              />
-                            </>
-                          }
-                        />
-                      ) : (
-                        <>
-                          <button
-                            className="flink-item-button"
-                            onClick={() => {
-                              handleEdit(groupIdx, linkIdx, link.name);
-                              setEditing(Math.random());
+                      <span className="flink-item-name">
+                        {isEditing ? (
+                          <Input
+                            value={nameEditValue}
+                            onChange={(_, data) => setNameEditValue(data.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleEditConfirm();
+                              if (e.key === "Escape") handleEditCancel();
                             }}
-                          >
-                            <EditFilled />
-                          </button>
-                          <span
-                            className="flink-item-name-text"
-                            title={link.name}
-                          >
-                            {link.name}
-                          </span>
-                        </>
-                      )}
-                    </span>
-                    <div className="flink-item-color">
-                      <div className="flink-item-color-text">
-                        {isColorEditing ? (
-                          <>
-                            <input
-                              type="color"
-                              className="flink-item-color-box"
-                              style={{
-                                backgroundColor: colorEditing.color,
-                              }}
-                              value={colorEditing.color}
-                              onChange={(e) =>
-                                setColorEditing({
-                                  groupIdx,
-                                  linkIdx,
-                                  color: e.target.value,
-                                })
-                              }
-                              title="选择颜色"
-                              autoFocus
-                            />
-                            <Button
-                              appearance="subtle"
-                              size="small"
-                              icon={<Color24Regular />}
-                              aria-label="取色"
-                              onClick={async () => {
-                                if ("EyeDropper" in window) {
-                                  // @ts-ignore
-                                  const eyeDropper = new window.EyeDropper();
-                                  try {
-                                    const result = await eyeDropper.open();
-                                    setColorEditing({
-                                      groupIdx,
-                                      linkIdx,
-                                      color: result.sRGBHex,
-                                    });
-                                  } catch (e) {}
-                                } else {
-                                  messageBarRef.current?.addMessage(
-                                    "错误",
-                                    "当前浏览器不支持取色器功能",
-                                    "error"
-                                  );
-                                }
-                              }}
-                              style={{ marginLeft: 4 }}
-                            />
-                            <Button
-                              appearance="subtle"
-                              size="small"
-                              icon={<Checkmark16Regular />}
-                              onClick={async () => {
-                                const group = fLinks[groupIdx];
-                                const link = group.links[linkIdx];
-                                const updated = {
-                                  ...link,
-                                  color: colorEditing.color,
-                                };
-                                const ok = await updateFlink(
-                                  group.name,
-                                  updated
-                                );
-                                if (ok) {
-                                  setFLinks((prev) =>
-                                    prev.map((g, gi) =>
-                                      gi === groupIdx
-                                        ? {
-                                            ...g,
-                                            links: g.links.map((l, li) =>
-                                              li === linkIdx ? updated : l
-                                            ),
-                                          }
-                                        : g
-                                    )
-                                  );
-                                  messageBarRef.current?.addMessage(
-                                    "提示",
-                                    "颜色修改成功",
-                                    "success"
-                                  );
-                                } else {
-                                  messageBarRef.current?.addMessage(
-                                    "错误",
-                                    "颜色修改失败",
-                                    "error"
-                                  );
-                                }
-                                setColorEditing(null);
-                                setEditing(Math.random());
-                              }}
-                              aria-label="确认"
-                            />
-                            <Button
-                              appearance="subtle"
-                              size="small"
-                              icon={<Dismiss16Regular />}
-                              onClick={() => {
-                                setColorEditing(null);
-                                setEditing(Math.random());
-                              }}
-                              aria-label="取消"
-                            />
-                            <span style={{ marginLeft: 8 }}>
-                              {colorEditing.color}
-                            </span>
-                          </>
+                            className="flink-item-name-edit"
+                            autoFocus
+                            size="small"
+                            contentAfter={
+                              <>
+                                <Button
+                                  appearance="subtle"
+                                  size="small"
+                                  icon={<Checkmark16Regular />}
+                                  onClick={handleEditConfirm}
+                                  aria-label="确认"
+                                />
+                                <Button
+                                  appearance="subtle"
+                                  size="small"
+                                  icon={<Dismiss16Regular />}
+                                  onClick={handleEditCancel}
+                                  aria-label="取消"
+                                />
+                              </>
+                            }
+                          />
                         ) : (
                           <>
-                            <span
-                              className="flink-item-color-box"
-                              style={{
-                                display: "inline-block",
-                                backgroundColor: link.color,
-                              }}
-                              title="点击编辑颜色"
+                            <button
+                              className="flink-item-button"
                               onClick={() => {
-                                setColorEditing({
-                                  groupIdx,
-                                  linkIdx,
-                                  color: link.color,
-                                });
+                                handleEdit(groupIdx, linkIdx, link.name);
                                 setEditing(Math.random());
                               }}
-                            />
-                            <span
-                              className="flink-item-latency"
-                              style={{ color: linkLatencyColor }}
                             >
-                              {link.latency! > 0
-                                ? ` ${Math.round(link.latency! * 1000)}ms`
-                                : " Error"}
+                              <EditFilled />
+                            </button>
+                            <span
+                              className="flink-item-name-text"
+                              title={link.name}
+                            >
+                              {link.name}
                             </span>
                           </>
                         )}
-                      </div>
-                    </div>
-                    <div className="flink-item-descr">
-                      {isDescrEditing ? (
-                        <Input
-                          value={descrEditValue}
-                          onChange={(_, data) => setDescrEditValue(data.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleDescrEditConfirm();
-                            if (e.key === "Escape") handleDescrEditCancel();
-                          }}
-                          className="flink-item-descr-edit"
-                          autoFocus
-                          size="small"
-                          contentAfter={
+                      </span>
+                      <div className="flink-item-color">
+                        <div className="flink-item-color-text">
+                          {isColorEditing ? (
                             <>
+                              <input
+                                type="color"
+                                className="flink-item-color-box"
+                                style={{
+                                  backgroundColor: colorEditing.color,
+                                }}
+                                value={colorEditing.color}
+                                onChange={(e) =>
+                                  setColorEditing({
+                                    groupIdx,
+                                    linkIdx,
+                                    color: e.target.value,
+                                  })
+                                }
+                                title="选择颜色"
+                                autoFocus
+                              />
+                              <Button
+                                appearance="subtle"
+                                size="small"
+                                icon={<Color24Regular />}
+                                aria-label="取色"
+                                onClick={async () => {
+                                  if ("EyeDropper" in window) {
+                                    // @ts-ignore
+                                    const eyeDropper = new window.EyeDropper();
+                                    try {
+                                      const result = await eyeDropper.open();
+                                      setColorEditing({
+                                        groupIdx,
+                                        linkIdx,
+                                        color: result.sRGBHex,
+                                      });
+                                    } catch (e) {}
+                                  } else {
+                                    messageBarRef.current?.addMessage(
+                                      "错误",
+                                      "当前浏览器不支持取色器功能",
+                                      "error"
+                                    );
+                                  }
+                                }}
+                                style={{ marginLeft: 4 }}
+                              />
                               <Button
                                 appearance="subtle"
                                 size="small"
                                 icon={<Checkmark16Regular />}
-                                onClick={handleDescrEditConfirm}
+                                onClick={async () => {
+                                  const group = fLinks[groupIdx];
+                                  const link = group.links[linkIdx];
+                                  const updated = {
+                                    ...link,
+                                    color: colorEditing.color,
+                                  };
+                                  const ok = await updateFlink(
+                                    group.name,
+                                    updated
+                                  );
+                                  if (ok) {
+                                    setFLinks((prev) =>
+                                      prev.map((g, gi) =>
+                                        gi === groupIdx
+                                          ? {
+                                              ...g,
+                                              links: g.links.map((l, li) =>
+                                                li === linkIdx ? updated : l
+                                              ),
+                                            }
+                                          : g
+                                      )
+                                    );
+                                    messageBarRef.current?.addMessage(
+                                      "提示",
+                                      "颜色修改成功",
+                                      "success"
+                                    );
+                                  } else {
+                                    messageBarRef.current?.addMessage(
+                                      "错误",
+                                      "颜色修改失败",
+                                      "error"
+                                    );
+                                  }
+                                  setColorEditing(null);
+                                  setEditing(Math.random());
+                                }}
                                 aria-label="确认"
                               />
                               <Button
                                 appearance="subtle"
                                 size="small"
                                 icon={<Dismiss16Regular />}
-                                onClick={handleDescrEditCancel}
+                                onClick={() => {
+                                  setColorEditing(null);
+                                  setEditing(Math.random());
+                                }}
                                 aria-label="取消"
                               />
+                              <span style={{ marginLeft: 8 }}>
+                                {colorEditing.color}
+                              </span>
                             </>
-                          }
-                        />
-                      ) : (
-                        <>
-                          <button
-                            className="flink-item-button"
-                            style={{ marginRight: 4 }}
-                            onClick={() => {
-                              handleDescrEdit(
-                                groupIdx,
-                                linkIdx,
-                                link.description || ""
-                              );
-                              setEditing(Math.random());
+                          ) : (
+                            <>
+                              <span
+                                className="flink-item-color-box"
+                                style={{
+                                  display: "inline-block",
+                                  backgroundColor: link.color,
+                                }}
+                                title="点击编辑颜色"
+                                onClick={() => {
+                                  setColorEditing({
+                                    groupIdx,
+                                    linkIdx,
+                                    color: link.color,
+                                  });
+                                  setEditing(Math.random());
+                                }}
+                              />
+                              <span
+                                className="flink-item-latency"
+                                style={{ color: linkLatencyColor }}
+                              >
+                                {link.latency! > 0
+                                  ? ` ${Math.round(link.latency! * 1000)}ms`
+                                  : " Error"}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flink-item-descr">
+                        {isDescrEditing ? (
+                          <Input
+                            value={descrEditValue}
+                            onChange={(_, data) =>
+                              setDescrEditValue(data.value)
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleDescrEditConfirm();
+                              if (e.key === "Escape") handleDescrEditCancel();
                             }}
-                          >
-                            <ComposeRegular />
-                          </button>
-                          <div className="flink-item-descr-text">
-                            {link.description}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    <Link className="flink-item-button open" href={link.url}>
-                      <OpenFilled />
-                    </Link>
+                            className="flink-item-descr-edit"
+                            autoFocus
+                            size="small"
+                            contentAfter={
+                              <>
+                                <Button
+                                  appearance="subtle"
+                                  size="small"
+                                  icon={<Checkmark16Regular />}
+                                  onClick={handleDescrEditConfirm}
+                                  aria-label="确认"
+                                />
+                                <Button
+                                  appearance="subtle"
+                                  size="small"
+                                  icon={<Dismiss16Regular />}
+                                  onClick={handleDescrEditCancel}
+                                  aria-label="取消"
+                                />
+                              </>
+                            }
+                          />
+                        ) : (
+                          <>
+                            <button
+                              className="flink-item-button"
+                              style={{ marginRight: 4 }}
+                              onClick={() => {
+                                handleDescrEdit(
+                                  groupIdx,
+                                  linkIdx,
+                                  link.description || ""
+                                );
+                                setEditing(Math.random());
+                              }}
+                            >
+                              <ComposeRegular />
+                            </button>
+                            <div className="flink-item-descr-text">
+                              {link.description}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <Link className="flink-item-button open" href={link.url}>
+                        <OpenFilled />
+                      </Link>
 
-                    <button
-                      className="flink-item-button editlink"
-                      aria-label="编辑链接"
-                      onClick={() => {
-                        setUrlEditing({ groupIdx, linkIdx });
-                        setUrlEditValue(link.url);
-                        setEditing(Math.random());
-                      }}
-                    >
-                      <LinkEditRegular />
-                    </button>
-                    <button
-                      className="flink-item-button delete"
-                      onClick={() => {
-                        setDeleteLinkInfo({ groupIdx, linkIdx });
-                        setEditing(Math.random());
-                      }}
-                      style={{ marginLeft: 2 }}
-                      title="删除友链"
-                    >
-                      <DeleteRegular />
-                    </button>
-                    <Button
-                      appearance="subtle"
-                      size="small"
-                      icon={<ArrowLeftRegular />}
-                      aria-label="移动分组"
-                      style={{ width: "fit-content" }}
-                      onClick={() => {
-                        setMoveLinkInfo({ groupIdx, linkIdx });
-                        setMoveTargetGroup(null);
-                        setEditing(Math.random());
-                      }}
-                    >
-                      移动分组
-                    </Button>
-                  </div>
-                );
-              })}
-              {/* 添加友链按钮 */}
-              <Button
-                appearance="subtle"
-                icon={<Add16Regular />}
-                className="flink-group-addlinkbtn"
-                onClick={async () => {
-                  const newLink = {
-                    name: "新友链喵",
-                    description: "114514",
-                    url: "https://0v0.my",
-                    color: "#66ccff",
-                    avatar: "https://img.0v0.my/2024/09/06/66dabf7f748c8.jpg",
-                    id: stringRandom(16, { letters: "abcdef" }),
-                    latency: 0.114,
-                  };
-                  const groupName = fLinks[groupIdx].name;
-                  const ok = await addFlink(groupName, newLink);
-                  if (ok) {
-                    setFLinks((prev) =>
-                      prev.map((group, gi) =>
-                        gi === groupIdx
-                          ? { ...group, links: [...group.links, newLink] }
-                          : group
-                      )
-                    );
-                    messageBarRef.current?.addMessage(
-                      "提示",
-                      "添加友链成功",
-                      "success"
-                    );
-                  } else {
-                    messageBarRef.current?.addMessage(
-                      "错误",
-                      "添加失败",
-                      "error"
-                    );
-                  }
-                  setEditing(Math.random());
-                }}
-              >
-                添加友链
-              </Button>
+                      <button
+                        className="flink-item-button editlink"
+                        aria-label="编辑链接"
+                        onClick={() => {
+                          setUrlEditing({ groupIdx, linkIdx });
+                          setUrlEditValue(link.url);
+                          setEditing(Math.random());
+                        }}
+                      >
+                        <LinkEditRegular />
+                      </button>
+                      <button
+                        className="flink-item-button delete"
+                        onClick={() => {
+                          setDeleteLinkInfo({ groupIdx, linkIdx });
+                          setEditing(Math.random());
+                        }}
+                        style={{ marginLeft: 2 }}
+                        title="删除友链"
+                      >
+                        <DeleteRegular />
+                      </button>
+                      <Button
+                        appearance="subtle"
+                        size="small"
+                        icon={<ArrowLeftRegular />}
+                        aria-label="移动分组"
+                        style={{ width: "fit-content" }}
+                        onClick={() => {
+                          setMoveLinkInfo({ groupIdx, linkIdx });
+                          setMoveTargetGroup(null);
+                          setEditing(Math.random());
+                        }}
+                      >
+                        移动分组
+                      </Button>
+                    </div>
+                  );
+                })}
+                {/* 添加友链按钮 */}
+                <Button
+                  appearance="subtle"
+                  icon={<Add16Regular />}
+                  className="flink-group-addlinkbtn"
+                  onClick={async () => {
+                    const newLink = {
+                      name: "新友链喵",
+                      description: "114514",
+                      url: "https://0v0.my",
+                      color: "#66ccff",
+                      avatar: "https://img.0v0.my/2024/09/06/66dabf7f748c8.jpg",
+                      id: stringRandom(16, { letters: "abcdef" }),
+                      latency: 0.114,
+                    };
+                    const groupName = fLinks[groupIdx].name;
+                    const ok = await addFlink(groupName, newLink);
+                    if (ok) {
+                      setFLinks((prev) =>
+                        prev.map((group, gi) =>
+                          gi === groupIdx
+                            ? { ...group, links: [...group.links, newLink] }
+                            : group
+                        )
+                      );
+                      messageBarRef.current?.addMessage(
+                        "提示",
+                        "添加友链成功",
+                        "success"
+                      );
+                    } else {
+                      messageBarRef.current?.addMessage(
+                        "错误",
+                        "添加失败",
+                        "error"
+                      );
+                    }
+                    setEditing(Math.random());
+                  }}
+                >
+                  添加友链
+                </Button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
       <Messages ref={messageBarRef} />
     </>

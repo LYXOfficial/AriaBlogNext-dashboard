@@ -26,12 +26,12 @@ export async function getFlinks(): Promise<FriendLinkGroup[]> {
 }
 
 // 新增分组
-export async function addGroup(name: string, description = ""): Promise<boolean> {
+export async function addGroup(name: string, description = "",order = 0): Promise<boolean> {
   try {
     const res = await fetch(`${config.backEndUrl}/update/flink/addGroup`, {
       method: "POST",
       headers: getHeader(),
-      body: JSON.stringify({ name, description }),
+      body: JSON.stringify({ name, description,order }),
     });
     refreshFlinksCache();
     return res.ok;
@@ -58,12 +58,12 @@ export async function deleteGroup(name: string): Promise<boolean> {
 }
 
 // 更新分组
-export async function updateGroup(old_name: string, name: string, description = ""): Promise<boolean> {
+export async function updateGroup(old_name: string, name: string, description = "", order = 0): Promise<boolean> {
   try {
     const res = await fetch(`${config.backEndUrl}/update/flink/updateGroup`, {
       method: "PUT",
       headers: getHeader(),
-      body: JSON.stringify({ old_name, name, description }),
+      body: JSON.stringify({ old_name, name, description,order }),
     });
     refreshFlinksCache();
     return res.ok;

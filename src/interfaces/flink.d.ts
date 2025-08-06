@@ -10,5 +10,6 @@ export declare interface FriendLink{
 export declare interface FriendLinkGroup{
     name: string;
     description: string;
+    order?: number;
     links: FriendLink[];
 }
