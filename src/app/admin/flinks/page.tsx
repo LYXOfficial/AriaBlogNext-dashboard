@@ -1,7 +1,16 @@
 "use client";
 import { config } from "@/dashboardConfig";
 import { FriendLinkGroup } from "@/interfaces/flink";
-import { getFlinks } from "@/utils/flinks";
+import {
+  getFlinks,
+  addFlink,
+  deleteFlink,
+  addGroup,
+  deleteGroup,
+  updateGroup,
+  updateFlink,
+  moveFlinkGroup,
+} from "@/utils/flinks";
 import Link from "next/link";
 import React, { useEffect, useState, useRef } from "react";
 import LazyLoad from "vanilla-lazyload";
@@ -12,67 +21,36 @@ import {
   EditFilled,
   ComposeRegular,
   OpenFilled,
-  Color24Regular, // 新增调色板图标
+  Color24Regular,
   DeleteRegular,
   Add16Regular,
   ArrowLeftRegular,
 } from "@fluentui/react-icons";
 import { Input, Button, Label, Dropdown, Option } from "@fluentui/react-components";
 import { BaseDialog } from "@/components/Dialog";
+import Messages, { MessagesRef } from "@/components/Messages";
 import "@/styles/flinks.scss";
 import stringRandom from "string-random";
 
 export default function Flinks() {
   const [fLinks, setFLinks] = useState<FriendLinkGroup[]>([]);
-  const [editing, setEditing] = useState<{
-    groupIdx: number;
-    linkIdx: number;
-  } | null>(null);
+  const [editing, setEditing] = useState<{ groupIdx: number; linkIdx: number } | null>(null);
   const [editValue, setEditValue] = useState("");
-  const [colorEditing, setColorEditing] = useState<{
-    groupIdx: number;
-    linkIdx: number;
-    color: string;
-  } | null>(null);
-  const [descrEditing, setDescrEditing] = useState<{
-    groupIdx: number;
-    linkIdx: number;
-  } | null>(null);
+  const [colorEditing, setColorEditing] = useState<{ groupIdx: number; linkIdx: number; color: string } | null>(null);
+  const [descrEditing, setDescrEditing] = useState<{ groupIdx: number; linkIdx: number } | null>(null);
   const [descrEditValue, setDescrEditValue] = useState("");
-
-  // 头像编辑弹窗内容
-  const [avatarEditing, setAvatarEditing] = useState<{
-    groupIdx: number;
-    linkIdx: number;
-    avatar: string;
-  } | null>(null);
+  const [avatarEditing, setAvatarEditing] = useState<{ groupIdx: number; linkIdx: number; avatar: string } | null>(null);
   const [avatarInput, setAvatarInput] = useState("");
   const uploadRef = useRef<HTMLInputElement>(null);
-
-  // 新增分组编辑相关 state
-  const [groupEditing, setGroupEditing] = useState<{
-    groupIdx: number;
-    name: string;
-    description: string;
-  } | null>(null);
-
+  const [groupEditing, setGroupEditing] = useState<{ groupIdx: number; name: string; description: string } | null>(null);
   const [deleteGroupIdx, setDeleteGroupIdx] = useState<number | null>(null);
-  const [deleteLinkInfo, setDeleteLinkInfo] = useState<{
-    groupIdx: number;
-    linkIdx: number;
-  } | null>(null);
-
-  // 新建分组相关 state
+  const [deleteLinkInfo, setDeleteLinkInfo] = useState<{ groupIdx: number; linkIdx: number } | null>(null);
   const [newGroupDialogOpen, setNewGroupDialogOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDesc, setNewGroupDesc] = useState("");
-
-  // 移动友链相关 state
-  const [moveLinkInfo, setMoveLinkInfo] = useState<{
-    groupIdx: number;
-    linkIdx: number;
-  } | null>(null);
+  const [moveLinkInfo, setMoveLinkInfo] = useState<{ groupIdx: number; linkIdx: number } | null>(null);
   const [moveTargetGroup, setMoveTargetGroup] = useState<number | null>(null);
+  const messageBarRef = useRef<MessagesRef>(null);
 
   useEffect(() => {
     (async () => {
@@ -93,20 +71,29 @@ export default function Flinks() {
     setEditValue(e.target.value);
   };
 
-  const handleEditConfirm = () => {
+  const handleEditConfirm = async () => {
     if (editing) {
-      setFLinks((prev) =>
-        prev.map((group, gi) =>
-          gi === editing.groupIdx
-            ? {
-                ...group,
-                links: group.links.map((link, li) =>
-                  li === editing.linkIdx ? { ...link, name: editValue } : link
-                ),
-              }
-            : group
-        )
-      );
+      const group = fLinks[editing.groupIdx];
+      const link = group.links[editing.linkIdx];
+      const updated = { ...link, name: editValue };
+      const ok = await updateFlink(group.name, updated);
+      if (ok) {
+        setFLinks(prev =>
+          prev.map((g, gi) =>
+            gi === editing.groupIdx
+              ? {
+                  ...g,
+                  links: g.links.map((l, li) =>
+                    li === editing.linkIdx ? updated : l
+                  ),
+                }
+              : g
+          )
+        );
+        messageBarRef.current?.addMessage("提示", "修改成功", "success");
+      } else {
+        messageBarRef.current?.addMessage("错误", "修改失败", "error");
+      }
       setEditing(null);
     }
   };
@@ -125,22 +112,29 @@ export default function Flinks() {
     setDescrEditValue(descr);
   };
 
-  const handleDescrEditConfirm = () => {
+  const handleDescrEditConfirm = async () => {
     if (descrEditing) {
-      setFLinks((prev) =>
-        prev.map((group, gi) =>
-          gi === descrEditing.groupIdx
-            ? {
-                ...group,
-                links: group.links.map((link, li) =>
-                  li === descrEditing.linkIdx
-                    ? { ...link, description: descrEditValue }
-                    : link
-                ),
-              }
-            : group
-        )
-      );
+      const group = fLinks[descrEditing.groupIdx];
+      const link = group.links[descrEditing.linkIdx];
+      const updated = { ...link, description: descrEditValue };
+      const ok = await updateFlink(group.name, updated);
+      if (ok) {
+        setFLinks(prev =>
+          prev.map((g, gi) =>
+            gi === descrEditing.groupIdx
+              ? {
+                  ...g,
+                  links: g.links.map((l, li) =>
+                    li === descrEditing.linkIdx ? updated : l
+                  ),
+                }
+              : g
+          )
+        );
+        messageBarRef.current?.addMessage("提示", "描述修改成功", "success");
+      } else {
+        messageBarRef.current?.addMessage("错误", "描述修改失败", "error");
+      }
       setDescrEditing(null);
     }
   };
@@ -160,28 +154,41 @@ export default function Flinks() {
   }
 
   // 删除分组
-  const handleDeleteGroup = () => {
+  const handleDeleteGroup = async () => {
     if (deleteGroupIdx !== null) {
-      setFLinks((prev) => prev.filter((_, idx) => idx !== deleteGroupIdx));
+      const groupName = fLinks[deleteGroupIdx].name;
+      const ok = await deleteGroup(groupName);
+      if (ok) {
+        setFLinks(prev => prev.filter((_, idx) => idx !== deleteGroupIdx));
+        messageBarRef.current?.addMessage("提示", "删除分组成功", "success");
+      } else {
+        messageBarRef.current?.addMessage("错误", "删除分组失败", "error");
+      }
       setDeleteGroupIdx(null);
     }
   };
 
   // 删除友链
-  const handleDeleteLink = () => {
+  const handleDeleteLink = async () => {
     if (deleteLinkInfo) {
-      setFLinks((prev) =>
-        prev.map((group, gi) =>
-          gi === deleteLinkInfo.groupIdx
-            ? {
-                ...group,
-                links: group.links.filter(
-                  (_, li) => li !== deleteLinkInfo.linkIdx
-                ),
-              }
-            : group
-        )
-      );
+      const groupName = fLinks[deleteLinkInfo.groupIdx].name;
+      const linkId = fLinks[deleteLinkInfo.groupIdx].links[deleteLinkInfo.linkIdx].id;
+      const ok = await deleteFlink(groupName, linkId);
+      if (ok) {
+        setFLinks(prev =>
+          prev.map((group, gi) =>
+            gi === deleteLinkInfo.groupIdx
+              ? {
+                  ...group,
+                  links: group.links.filter((_, li) => li !== deleteLinkInfo.linkIdx),
+                }
+              : group
+          )
+        );
+        messageBarRef.current?.addMessage("提示", "删除友链成功", "success");
+      } else {
+        messageBarRef.current?.addMessage("错误", "删除友链失败", "error");
+      }
       setDeleteLinkInfo(null);
     }
   };
@@ -192,22 +199,29 @@ export default function Flinks() {
         title="编辑头像"
         open={!!avatarEditing}
         onClose={() => setAvatarEditing(null)}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (avatarEditing) {
-            setFLinks((prev) =>
-              prev.map((group, gi) =>
-                gi === avatarEditing.groupIdx
-                  ? {
-                      ...group,
-                      links: group.links.map((l, li) =>
-                        li === avatarEditing.linkIdx
-                          ? { ...l, avatar: avatarInput }
-                          : l
-                      ),
-                    }
-                  : group
-              )
-            );
+            const group = fLinks[avatarEditing.groupIdx];
+            const link = group.links[avatarEditing.linkIdx];
+            const updated = { ...link, avatar: avatarInput };
+            const ok = await updateFlink(group.name, updated);
+            if (ok) {
+              setFLinks(prev =>
+                prev.map((g, gi) =>
+                  gi === avatarEditing.groupIdx
+                    ? {
+                        ...g,
+                        links: g.links.map((l, li) =>
+                          li === avatarEditing.linkIdx ? updated : l
+                        ),
+                      }
+                    : g
+                )
+              );
+              messageBarRef.current?.addMessage("提示", "头像修改成功", "success");
+            } else {
+              messageBarRef.current?.addMessage("错误", "头像修改失败", "error");
+            }
           }
           setAvatarEditing(null);
         }}
@@ -248,19 +262,26 @@ export default function Flinks() {
         title="编辑分组"
         open={!!groupEditing}
         onClose={() => setGroupEditing(null)}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (groupEditing) {
-            setFLinks((prev) =>
-              prev.map((group, gi) =>
-                gi === groupEditing.groupIdx
-                  ? {
-                      ...group,
-                      name: groupEditing.name,
-                      description: groupEditing.description,
-                    }
-                  : group
-              )
-            );
+            const oldName = fLinks[groupEditing.groupIdx].name;
+            const ok = await updateGroup(oldName, groupEditing.name, groupEditing.description);
+            if (ok) {
+              setFLinks(prev =>
+                prev.map((group, gi) =>
+                  gi === groupEditing.groupIdx
+                    ? {
+                        ...group,
+                        name: groupEditing.name,
+                        description: groupEditing.description,
+                      }
+                    : group
+                )
+              );
+              messageBarRef.current?.addMessage("提示", "分组修改成功", "success");
+            } else {
+              messageBarRef.current?.addMessage("错误", "分组修改失败", "error");
+            }
           }
           setGroupEditing(null);
         }}
@@ -316,19 +337,25 @@ export default function Flinks() {
           setNewGroupName("");
           setNewGroupDesc("");
         }}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (newGroupName.trim()) {
-            setFLinks((prev) => [
-              ...prev,
-              {
-                name: newGroupName.trim(),
-                description: newGroupDesc.trim(),
-                links: [],
-              },
-            ]);
-            setNewGroupDialogOpen(false);
-            setNewGroupName("");
-            setNewGroupDesc("");
+            const ok = await addGroup(newGroupName.trim(), newGroupDesc.trim());
+            if (ok) {
+              setFLinks(prev => [
+                ...prev,
+                {
+                  name: newGroupName.trim(),
+                  description: newGroupDesc.trim(),
+                  links: [],
+                },
+              ]);
+              setNewGroupDialogOpen(false);
+              setNewGroupName("");
+              setNewGroupDesc("");
+              messageBarRef.current?.addMessage("提示", "新建分组成功", "success");
+            } else {
+              messageBarRef.current?.addMessage("错误", "新建分组失败", "error");
+            }
           }
         }}
         content={
@@ -356,35 +383,44 @@ export default function Flinks() {
         title="移动友链到其他分组"
         open={!!moveLinkInfo}
         onClose={() => setMoveLinkInfo(null)}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (
             moveLinkInfo &&
             moveTargetGroup !== null &&
             moveTargetGroup !== moveLinkInfo.groupIdx
           ) {
-            setFLinks(prev => {
-              const link = prev[moveLinkInfo.groupIdx].links[moveLinkInfo.linkIdx];
-              return prev.map((group, gi) => {
-                if (gi === moveLinkInfo.groupIdx) {
-                  // 移除
-                  return {
-                    ...group,
-                    links: group.links.filter((_, li) => li !== moveLinkInfo.linkIdx),
-                  };
-                }
-                if (gi === moveTargetGroup) {
-                  // 添加
-                  return {
-                    ...group,
-                    links: [...group.links, link],
-                  };
-                }
-                return group;
+            const fromGroup = fLinks[moveLinkInfo.groupIdx].name;
+            const toGroup = fLinks[moveTargetGroup].name;
+            const linkId = fLinks[moveLinkInfo.groupIdx].links[moveLinkInfo.linkIdx].id;
+            const ok = await moveFlinkGroup(fromGroup, toGroup, linkId);
+            if (ok) {
+              setFLinks(prev => {
+                const link = prev[moveLinkInfo.groupIdx].links[moveLinkInfo.linkIdx];
+                return prev.map((group, gi) => {
+                  if (gi === moveLinkInfo.groupIdx) {
+                    // 移除
+                    return {
+                      ...group,
+                      links: group.links.filter((_, li) => li !== moveLinkInfo.linkIdx),
+                    };
+                  }
+                  if (gi === moveTargetGroup) {
+                    // 添加
+                    return {
+                      ...group,
+                      links: [...group.links, link],
+                    };
+                  }
+                  return group;
+                });
               });
-            });
+              messageBarRef.current?.addMessage("提示", "移动成功", "success");
+            } else {
+              messageBarRef.current?.addMessage("错误", "移动失败", "error");
+            }
+            setMoveLinkInfo(null);
+            setMoveTargetGroup(null);
           }
-          setMoveLinkInfo(null);
-          setMoveTargetGroup(null);
         }}
         content={
           <div>
@@ -580,7 +616,6 @@ export default function Flinks() {
                               icon={<Color24Regular />}
                               aria-label="取色"
                               onClick={async () => {
-                                // 取色器功能
                                 if ("EyeDropper" in window) {
                                   // @ts-ignore
                                   const eyeDropper = new window.EyeDropper();
@@ -591,11 +626,9 @@ export default function Flinks() {
                                       linkIdx,
                                       color: result.sRGBHex,
                                     });
-                                  } catch (e) {
-                                    // 用户取消取色
-                                  }
+                                  } catch (e) {}
                                 } else {
-                                  alert("当前浏览器不支持取色器功能");
+                                  messageBarRef.current?.addMessage("错误", "当前浏览器不支持取色器功能", "error");
                                 }
                               }}
                               style={{ marginLeft: 4 }}
@@ -604,24 +637,28 @@ export default function Flinks() {
                               appearance="subtle"
                               size="small"
                               icon={<Checkmark16Regular />}
-                              onClick={() => {
-                                setFLinks((prev) =>
-                                  prev.map((group, gi) =>
-                                    gi === groupIdx
-                                      ? {
-                                          ...group,
-                                          links: group.links.map((l, li) =>
-                                            li === linkIdx
-                                              ? {
-                                                  ...l,
-                                                  color: colorEditing.color,
-                                                }
-                                              : l
-                                          ),
-                                        }
-                                      : group
-                                  )
-                                );
+                              onClick={async () => {
+                                const group = fLinks[groupIdx];
+                                const link = group.links[linkIdx];
+                                const updated = { ...link, color: colorEditing.color };
+                                const ok = await updateFlink(group.name, updated);
+                                if (ok) {
+                                  setFLinks(prev =>
+                                    prev.map((g, gi) =>
+                                      gi === groupIdx
+                                        ? {
+                                            ...g,
+                                            links: g.links.map((l, li) =>
+                                              li === linkIdx ? updated : l
+                                            ),
+                                          }
+                                        : g
+                                    )
+                                  );
+                                  messageBarRef.current?.addMessage("提示", "颜色修改成功", "success");
+                                } else {
+                                  messageBarRef.current?.addMessage("错误", "颜色修改失败", "error");
+                                }
                                 setColorEditing(null);
                               }}
                               aria-label="确认"
@@ -668,9 +705,7 @@ export default function Flinks() {
                       </div>
                     </div>
                     <div className="flink-item-descr">
-                      {descrEditing &&
-                      descrEditing.groupIdx === groupIdx &&
-                      descrEditing.linkIdx === linkIdx ? (
+                      {isDescrEditing ? (
                         <Input
                           value={descrEditValue}
                           onChange={(_, data) => setDescrEditValue(data.value)}
@@ -736,7 +771,7 @@ export default function Flinks() {
                       size="small"
                       icon={<ArrowLeftRegular />}
                       aria-label="移动分组"
-                      style={{ width:"100%" }}
+                      style={{ width: "100%" }}
                       onClick={() => {
                         setMoveLinkInfo({ groupIdx, linkIdx });
                         setMoveTargetGroup(null);
@@ -752,28 +787,30 @@ export default function Flinks() {
                 appearance="subtle"
                 icon={<Add16Regular />}
                 className="flink-group-addlinkbtn"
-                onClick={() => {
-                  setFLinks(prev =>
-                    prev.map((group, gi) =>
-                      gi === groupIdx
-                        ? {
-                            ...group,
-                            links: [
-                              ...group.links,
-                              {
-                                name: "新友链喵",
-                                description: "114514",
-                                url: "https://0v0.my",
-                                color: "#66ccff",
-                                avatar: "https://img.0v0.my/2024/09/06/66dabf7f748c8.jpg",
-                                id: stringRandom(16,{letters:"ABCDEF" }),
-                                latency: 0.114, 
-                              },
-                            ],
-                          }
-                        : group
-                    )
-                  );
+                onClick={async () => {
+                  const newLink = {
+                    name: "新友链喵",
+                    description: "114514",
+                    url: "https://0v0.my",
+                    color: "#66ccff",
+                    avatar: "https://img.0v0.my/2024/09/06/66dabf7f748c8.jpg",
+                    id: stringRandom(16, { letters: "ABCDEF" }),
+                    latency: 0.114,
+                  };
+                  const groupName = fLinks[groupIdx].name;
+                  const ok = await addFlink(groupName, newLink);
+                  if (ok) {
+                    setFLinks(prev =>
+                      prev.map((group, gi) =>
+                        gi === groupIdx
+                          ? { ...group, links: [...group.links, newLink] }
+                          : group
+                      )
+                    );
+                    messageBarRef.current?.addMessage("提示", "添加友链成功", "success");
+                  } else {
+                    messageBarRef.current?.addMessage("错误", "添加失败", "error");
+                  }
                 }}
               >
                 添加友链
@@ -782,6 +819,7 @@ export default function Flinks() {
           </div>
         ))}
       </div>
+      <Messages ref={messageBarRef} />
     </>
   );
 }
