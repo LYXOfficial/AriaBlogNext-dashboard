@@ -19,8 +19,7 @@
         }
         &-addlinkbtn{
             height: fit-content;
-            margin-right: auto;
-            margin-top: 12px;
+            margin-right: auto!important;
         }
     }
 
@@ -146,10 +145,15 @@
                 right: 15px;
                 top: 15px;
             }
-            &.delete{
+            &.editlink{
                 position: absolute;
                 right: 15px;
                 top: 40px;
+            }
+            &.delete{
+                position: absolute;
+                right: 15px;
+                top: 65px;
                 color: red;
                 &:hover{
                     color: gray;

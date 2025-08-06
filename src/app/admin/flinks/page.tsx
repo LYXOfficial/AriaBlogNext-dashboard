@@ -25,6 +25,7 @@ import {
   DeleteRegular,
   Add16Regular,
   ArrowLeftRegular,
+  LinkEditRegular,
 } from "@fluentui/react-icons";
 import {
   Input,
@@ -82,6 +83,8 @@ export default function Flinks() {
   const [moveTargetGroup, setMoveTargetGroup] = useState<number | null>(null);
   const [editing, setEditing] = useState<number>(0);
   const messageBarRef = useRef<MessagesRef>(null);
+  const [urlEditing, setUrlEditing] = useState<{ groupIdx: number; linkIdx: number } | null>(null);
+  const [urlEditValue, setUrlEditValue] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -540,6 +543,51 @@ export default function Flinks() {
         }
       />
 
+      {/* 编辑友链链接对话框 */}
+      <BaseDialog
+        title="编辑友链链接"
+        open={!!urlEditing}
+        onClose={() => {
+          setUrlEditing(null);
+          setEditing(Math.random());
+        }}
+        onConfirm={async () => {
+          if (urlEditing) {
+            const group = fLinks[urlEditing.groupIdx];
+            const link = group.links[urlEditing.linkIdx];
+            const updated = { ...link, url: urlEditValue };
+            const ok = await updateFlink(group.name, updated);
+            if (ok) {
+              setFLinks(prev =>
+                prev.map((g, gi) =>
+                  gi === urlEditing.groupIdx
+                    ? {
+                        ...g,
+                        links: g.links.map((l, li) =>
+                          li === urlEditing.linkIdx ? updated : l
+                        ),
+                      }
+                    : g
+                )
+              );
+              messageBarRef.current?.addMessage("提示", "链接修改成功", "success");
+            } else {
+              messageBarRef.current?.addMessage("错误", "链接修改失败", "error");
+            }
+            setUrlEditing(null);
+            setEditing(Math.random());
+          }
+        }}
+        content={
+          <Input
+            value={urlEditValue}
+            onChange={(_, data) => setUrlEditValue(data.value)}
+            placeholder="请输入新的友链地址"
+            style={{ width: "100%" }}
+          />
+        }
+      />
+
       <h1>友链</h1>
       <div className="flink-groups">
         <div className="flink-topbar">
@@ -887,6 +935,17 @@ export default function Flinks() {
                       <OpenFilled />
                     </Link>
 
+                    <button
+                      className="flink-item-button editlink"
+                      aria-label="编辑链接"
+                      onClick={() => {
+                        setUrlEditing({ groupIdx, linkIdx });
+                        setUrlEditValue(link.url);
+                        setEditing(Math.random());
+                      }}
+                    >
+                      <LinkEditRegular />
+                    </button>
                     <button
                       className="flink-item-button delete"
                       onClick={() => {
