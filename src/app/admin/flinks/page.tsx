@@ -38,7 +38,9 @@ import { BaseDialog } from "@/components/Dialog";
 import Messages, { MessagesRef } from "@/components/Messages";
 import "@/styles/flinks.scss";
 import stringRandom from "string-random";
-
+function isValidUrl(url: string) {
+  return /^https?:\/\/.+/i.test(url);
+}
 export default function Flinks() {
   const [fLinks, setFLinks] = useState<FriendLinkGroup[]>([]);
   const [nameEditing, setNameEditing] = useState<{
@@ -246,6 +248,10 @@ export default function Flinks() {
           setEditing(Math.random());
         }}
         onConfirm={async () => {
+          if (!isValidUrl(avatarInput)) {
+            messageBarRef.current?.addMessage("错误", "请输入合法的图片链接（以 http:// 或 https:// 开头）", "error");
+            return;
+          }
           if (avatarEditing) {
             const group = fLinks[avatarEditing.groupIdx];
             const link = group.links[avatarEditing.linkIdx];
@@ -552,6 +558,10 @@ export default function Flinks() {
           setEditing(Math.random());
         }}
         onConfirm={async () => {
+          if (!isValidUrl(urlEditValue)) {
+            messageBarRef.current?.addMessage("错误", "请输入合法的链接（以 http:// 或 https:// 开头）", "error");
+            return;
+          }
           if (urlEditing) {
             const group = fLinks[urlEditing.groupIdx];
             const link = group.links[urlEditing.linkIdx];
@@ -986,7 +996,7 @@ export default function Flinks() {
                     url: "https://0v0.my",
                     color: "#66ccff",
                     avatar: "https://img.0v0.my/2024/09/06/66dabf7f748c8.jpg",
-                    id: stringRandom(16, { letters: "ABCDEF" }),
+                    id: stringRandom(16, { letters: "abcdef" }),
                     latency: 0.114,
                   };
                   const groupName = fLinks[groupIdx].name;
