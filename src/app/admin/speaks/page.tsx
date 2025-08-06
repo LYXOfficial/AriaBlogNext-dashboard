@@ -207,7 +207,6 @@ function BBItem({item,deleteHandler,saveHandler,pasteHandler,uploadWithTip,updat
             },
           });
           editor.container.addEventListener("paste",handlePaste);
-          editor.onPaste=(_,e)=>{e.preventDefault()};
         }}
         setOptions={
           {
@@ -400,7 +399,6 @@ function NewBBItem({item,saveHandler,pasteHandler,uploadWithTip}:{item:BB,saveHa
             },
           });
           editor.container.addEventListener("paste",handlePaste);
-          editor.onPaste=(_,e)=>{e.preventDefault()};
         }}
         setOptions={
           {
