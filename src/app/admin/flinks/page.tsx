@@ -26,7 +26,13 @@ import {
   Add16Regular,
   ArrowLeftRegular,
 } from "@fluentui/react-icons";
-import { Input, Button, Label, Dropdown, Option } from "@fluentui/react-components";
+import {
+  Input,
+  Button,
+  Label,
+  Dropdown,
+  Option,
+} from "@fluentui/react-components";
 import { BaseDialog } from "@/components/Dialog";
 import Messages, { MessagesRef } from "@/components/Messages";
 import "@/styles/flinks.scss";
@@ -34,22 +40,47 @@ import stringRandom from "string-random";
 
 export default function Flinks() {
   const [fLinks, setFLinks] = useState<FriendLinkGroup[]>([]);
-  const [editing, setEditing] = useState<{ groupIdx: number; linkIdx: number } | null>(null);
-  const [editValue, setEditValue] = useState("");
-  const [colorEditing, setColorEditing] = useState<{ groupIdx: number; linkIdx: number; color: string } | null>(null);
-  const [descrEditing, setDescrEditing] = useState<{ groupIdx: number; linkIdx: number } | null>(null);
+  const [nameEditing, setNameEditing] = useState<{
+    groupIdx: number;
+    linkIdx: number;
+  } | null>(null);
+  const [nameEditValue, setNameEditValue] = useState("");
+  const [colorEditing, setColorEditing] = useState<{
+    groupIdx: number;
+    linkIdx: number;
+    color: string;
+  } | null>(null);
+  const [descrEditing, setDescrEditing] = useState<{
+    groupIdx: number;
+    linkIdx: number;
+  } | null>(null);
   const [descrEditValue, setDescrEditValue] = useState("");
-  const [avatarEditing, setAvatarEditing] = useState<{ groupIdx: number; linkIdx: number; avatar: string } | null>(null);
+  const [avatarEditing, setAvatarEditing] = useState<{
+    groupIdx: number;
+    linkIdx: number;
+    avatar: string;
+  } | null>(null);
   const [avatarInput, setAvatarInput] = useState("");
   const uploadRef = useRef<HTMLInputElement>(null);
-  const [groupEditing, setGroupEditing] = useState<{ groupIdx: number; name: string; description: string } | null>(null);
+  const [groupEditing, setGroupEditing] = useState<{
+    groupIdx: number;
+    name: string;
+    description: string;
+  } | null>(null);
   const [deleteGroupIdx, setDeleteGroupIdx] = useState<number | null>(null);
-  const [deleteLinkInfo, setDeleteLinkInfo] = useState<{ groupIdx: number; linkIdx: number } | null>(null);
+  const [deleteLinkInfo, setDeleteLinkInfo] = useState<{
+    groupIdx: number;
+    linkIdx: number;
+  } | null>(null);
   const [newGroupDialogOpen, setNewGroupDialogOpen] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDesc, setNewGroupDesc] = useState("");
-  const [moveLinkInfo, setMoveLinkInfo] = useState<{ groupIdx: number; linkIdx: number } | null>(null);
+  const [moveLinkInfo, setMoveLinkInfo] = useState<{
+    groupIdx: number;
+    linkIdx: number;
+  } | null>(null);
   const [moveTargetGroup, setMoveTargetGroup] = useState<number | null>(null);
+  const [editing, setEditing] = useState<number>(0);
   const messageBarRef = useRef<MessagesRef>(null);
 
   useEffect(() => {
@@ -60,31 +91,31 @@ export default function Flinks() {
   useEffect(() => {
     const lazyLoadInstance = new LazyLoad({ elements_selector: ".lazy-img" });
     lazyLoadInstance.update();
-  }, [fLinks]);
+  }, [fLinks, editing]);
 
   const handleEdit = (groupIdx: number, linkIdx: number, name: string) => {
-    setEditing({ groupIdx, linkIdx });
-    setEditValue(name);
+    setNameEditing({ groupIdx, linkIdx });
+    setNameEditValue(name);
   };
 
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditValue(e.target.value);
+    setNameEditValue(e.target.value);
   };
 
   const handleEditConfirm = async () => {
-    if (editing) {
-      const group = fLinks[editing.groupIdx];
-      const link = group.links[editing.linkIdx];
-      const updated = { ...link, name: editValue };
+    if (nameEditing) {
+      const group = fLinks[nameEditing.groupIdx];
+      const link = group.links[nameEditing.linkIdx];
+      const updated = { ...link, name: nameEditValue };
       const ok = await updateFlink(group.name, updated);
       if (ok) {
-        setFLinks(prev =>
+        setFLinks((prev) =>
           prev.map((g, gi) =>
-            gi === editing.groupIdx
+            gi === nameEditing.groupIdx
               ? {
                   ...g,
                   links: g.links.map((l, li) =>
-                    li === editing.linkIdx ? updated : l
+                    li === nameEditing.linkIdx ? updated : l
                   ),
                 }
               : g
@@ -94,13 +125,15 @@ export default function Flinks() {
       } else {
         messageBarRef.current?.addMessage("错误", "修改失败", "error");
       }
-      setEditing(null);
+      setNameEditing(null);
+      setEditing(Math.random());
     }
   };
 
   const handleEditCancel = () => {
-    setEditing(null);
-    setEditValue("");
+    setNameEditing(null);
+    setNameEditValue("");
+    setEditing(Math.random());
   };
 
   const handleDescrEdit = (
@@ -119,7 +152,7 @@ export default function Flinks() {
       const updated = { ...link, description: descrEditValue };
       const ok = await updateFlink(group.name, updated);
       if (ok) {
-        setFLinks(prev =>
+        setFLinks((prev) =>
           prev.map((g, gi) =>
             gi === descrEditing.groupIdx
               ? {
@@ -136,12 +169,14 @@ export default function Flinks() {
         messageBarRef.current?.addMessage("错误", "描述修改失败", "error");
       }
       setDescrEditing(null);
+      setEditing(Math.random());
     }
   };
 
   const handleDescrEditCancel = () => {
     setDescrEditing(null);
     setDescrEditValue("");
+    setEditing(Math.random());
   };
 
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -159,12 +194,13 @@ export default function Flinks() {
       const groupName = fLinks[deleteGroupIdx].name;
       const ok = await deleteGroup(groupName);
       if (ok) {
-        setFLinks(prev => prev.filter((_, idx) => idx !== deleteGroupIdx));
+        setFLinks((prev) => prev.filter((_, idx) => idx !== deleteGroupIdx));
         messageBarRef.current?.addMessage("提示", "删除分组成功", "success");
       } else {
         messageBarRef.current?.addMessage("错误", "删除分组失败", "error");
       }
       setDeleteGroupIdx(null);
+      setEditing(Math.random());
     }
   };
 
@@ -172,15 +208,18 @@ export default function Flinks() {
   const handleDeleteLink = async () => {
     if (deleteLinkInfo) {
       const groupName = fLinks[deleteLinkInfo.groupIdx].name;
-      const linkId = fLinks[deleteLinkInfo.groupIdx].links[deleteLinkInfo.linkIdx].id;
+      const linkId =
+        fLinks[deleteLinkInfo.groupIdx].links[deleteLinkInfo.linkIdx].id;
       const ok = await deleteFlink(groupName, linkId);
       if (ok) {
-        setFLinks(prev =>
+        setFLinks((prev) =>
           prev.map((group, gi) =>
             gi === deleteLinkInfo.groupIdx
               ? {
                   ...group,
-                  links: group.links.filter((_, li) => li !== deleteLinkInfo.linkIdx),
+                  links: group.links.filter(
+                    (_, li) => li !== deleteLinkInfo.linkIdx
+                  ),
                 }
               : group
           )
@@ -190,6 +229,7 @@ export default function Flinks() {
         messageBarRef.current?.addMessage("错误", "删除友链失败", "error");
       }
       setDeleteLinkInfo(null);
+      setEditing(Math.random());
     }
   };
 
@@ -198,7 +238,10 @@ export default function Flinks() {
       <BaseDialog
         title="编辑头像"
         open={!!avatarEditing}
-        onClose={() => setAvatarEditing(null)}
+        onClose={() => {
+          setAvatarEditing(null);
+          setEditing(Math.random());
+        }}
         onConfirm={async () => {
           if (avatarEditing) {
             const group = fLinks[avatarEditing.groupIdx];
@@ -206,7 +249,7 @@ export default function Flinks() {
             const updated = { ...link, avatar: avatarInput };
             const ok = await updateFlink(group.name, updated);
             if (ok) {
-              setFLinks(prev =>
+              setFLinks((prev) =>
                 prev.map((g, gi) =>
                   gi === avatarEditing.groupIdx
                     ? {
@@ -218,12 +261,21 @@ export default function Flinks() {
                     : g
                 )
               );
-              messageBarRef.current?.addMessage("提示", "头像修改成功", "success");
+              messageBarRef.current?.addMessage(
+                "提示",
+                "头像修改成功",
+                "success"
+              );
             } else {
-              messageBarRef.current?.addMessage("错误", "头像修改失败", "error");
+              messageBarRef.current?.addMessage(
+                "错误",
+                "头像修改失败",
+                "error"
+              );
             }
           }
           setAvatarEditing(null);
+          setEditing(Math.random());
         }}
         content={
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -232,6 +284,7 @@ export default function Flinks() {
                 src={avatarInput}
                 alt="预览"
                 style={{ width: 36, height: 36, borderRadius: "50%" }}
+                onError={e => (e.currentTarget.src = config.falldownAvatar)}
               />
             )}
             <Input
@@ -261,13 +314,20 @@ export default function Flinks() {
       <BaseDialog
         title="编辑分组"
         open={!!groupEditing}
-        onClose={() => setGroupEditing(null)}
+        onClose={() => {
+          setGroupEditing(null);
+          setEditing(Math.random());
+        }}
         onConfirm={async () => {
           if (groupEditing) {
             const oldName = fLinks[groupEditing.groupIdx].name;
-            const ok = await updateGroup(oldName, groupEditing.name, groupEditing.description);
+            const ok = await updateGroup(
+              oldName,
+              groupEditing.name,
+              groupEditing.description
+            );
             if (ok) {
-              setFLinks(prev =>
+              setFLinks((prev) =>
                 prev.map((group, gi) =>
                   gi === groupEditing.groupIdx
                     ? {
@@ -278,12 +338,21 @@ export default function Flinks() {
                     : group
                 )
               );
-              messageBarRef.current?.addMessage("提示", "分组修改成功", "success");
+              messageBarRef.current?.addMessage(
+                "提示",
+                "分组修改成功",
+                "success"
+              );
             } else {
-              messageBarRef.current?.addMessage("错误", "分组修改失败", "error");
+              messageBarRef.current?.addMessage(
+                "错误",
+                "分组修改失败",
+                "error"
+              );
             }
           }
           setGroupEditing(null);
+          setEditing(Math.random());
         }}
         content={
           groupEditing && (
@@ -314,7 +383,10 @@ export default function Flinks() {
       <BaseDialog
         title="确认删除分组"
         open={deleteGroupIdx !== null}
-        onClose={() => setDeleteGroupIdx(null)}
+        onClose={() => {
+          setDeleteGroupIdx(null);
+          setEditing(Math.random());
+        }}
         onConfirm={handleDeleteGroup}
         content={<div>确定要删除该分组吗？分组下所有友链也会被删除！</div>}
       />
@@ -323,7 +395,10 @@ export default function Flinks() {
       <BaseDialog
         title="确认删除友链"
         open={deleteLinkInfo !== null}
-        onClose={() => setDeleteLinkInfo(null)}
+        onClose={() => {
+          setDeleteLinkInfo(null);
+          setEditing(Math.random());
+        }}
         onConfirm={handleDeleteLink}
         content={<div>确定要删除该友链吗？</div>}
       />
@@ -336,12 +411,13 @@ export default function Flinks() {
           setNewGroupDialogOpen(false);
           setNewGroupName("");
           setNewGroupDesc("");
+          setEditing(Math.random());
         }}
         onConfirm={async () => {
           if (newGroupName.trim()) {
             const ok = await addGroup(newGroupName.trim(), newGroupDesc.trim());
             if (ok) {
-              setFLinks(prev => [
+              setFLinks((prev) => [
                 ...prev,
                 {
                   name: newGroupName.trim(),
@@ -352,10 +428,19 @@ export default function Flinks() {
               setNewGroupDialogOpen(false);
               setNewGroupName("");
               setNewGroupDesc("");
-              messageBarRef.current?.addMessage("提示", "新建分组成功", "success");
+              messageBarRef.current?.addMessage(
+                "提示",
+                "新建分组成功",
+                "success"
+              );
             } else {
-              messageBarRef.current?.addMessage("错误", "新建分组失败", "error");
+              messageBarRef.current?.addMessage(
+                "错误",
+                "新建分组失败",
+                "error"
+              );
             }
+            setEditing(Math.random());
           }
         }}
         content={
@@ -382,7 +467,10 @@ export default function Flinks() {
       <BaseDialog
         title="移动友链到其他分组"
         open={!!moveLinkInfo}
-        onClose={() => setMoveLinkInfo(null)}
+        onClose={() => {
+          setMoveLinkInfo(null);
+          setEditing(Math.random());
+        }}
         onConfirm={async () => {
           if (
             moveLinkInfo &&
@@ -391,17 +479,21 @@ export default function Flinks() {
           ) {
             const fromGroup = fLinks[moveLinkInfo.groupIdx].name;
             const toGroup = fLinks[moveTargetGroup].name;
-            const linkId = fLinks[moveLinkInfo.groupIdx].links[moveLinkInfo.linkIdx].id;
+            const linkId =
+              fLinks[moveLinkInfo.groupIdx].links[moveLinkInfo.linkIdx].id;
             const ok = await moveFlinkGroup(fromGroup, toGroup, linkId);
             if (ok) {
-              setFLinks(prev => {
-                const link = prev[moveLinkInfo.groupIdx].links[moveLinkInfo.linkIdx];
+              setFLinks((prev) => {
+                const link =
+                  prev[moveLinkInfo.groupIdx].links[moveLinkInfo.linkIdx];
                 return prev.map((group, gi) => {
                   if (gi === moveLinkInfo.groupIdx) {
                     // 移除
                     return {
                       ...group,
-                      links: group.links.filter((_, li) => li !== moveLinkInfo.linkIdx),
+                      links: group.links.filter(
+                        (_, li) => li !== moveLinkInfo.linkIdx
+                      ),
                     };
                   }
                   if (gi === moveTargetGroup) {
@@ -420,6 +512,7 @@ export default function Flinks() {
             }
             setMoveLinkInfo(null);
             setMoveTargetGroup(null);
+            setEditing(Math.random());
           }
         }}
         content={
@@ -453,7 +546,10 @@ export default function Flinks() {
           <Button
             appearance="primary"
             icon={<Add16Regular />}
-            onClick={() => setNewGroupDialogOpen(true)}
+            onClick={() => {
+              setNewGroupDialogOpen(true);
+              setEditing(Math.random());
+            }}
           >
             新建分组
           </Button>
@@ -472,13 +568,14 @@ export default function Flinks() {
                 size="small"
                 icon={<EditFilled />}
                 aria-label="编辑分组"
-                onClick={() =>
+                onClick={() => {
                   setGroupEditing({
                     groupIdx,
                     name: item.name,
                     description: item.description || "",
-                  })
-                }
+                  });
+                  setEditing(Math.random());
+                }}
                 style={{ verticalAlign: "middle" }}
               />
               <Button
@@ -486,7 +583,10 @@ export default function Flinks() {
                 size="small"
                 icon={<DeleteRegular />}
                 aria-label="删除分组"
-                onClick={() => setDeleteGroupIdx(groupIdx)}
+                onClick={() => {
+                  setDeleteGroupIdx(groupIdx);
+                  setEditing(Math.random());
+                }}
                 style={{ verticalAlign: "middle", marginLeft: 4 }}
               />
               <span className="flink-group-descr">{item.description}</span>
@@ -503,9 +603,9 @@ export default function Flinks() {
                   linkLatencyColor = "#bd2a2a";
                 }
                 const isEditing =
-                  editing &&
-                  editing.groupIdx === groupIdx &&
-                  editing.linkIdx === linkIdx;
+                  nameEditing &&
+                  nameEditing.groupIdx === groupIdx &&
+                  nameEditing.linkIdx === linkIdx;
                 const isColorEditing =
                   colorEditing &&
                   colorEditing.groupIdx === groupIdx &&
@@ -516,28 +616,21 @@ export default function Flinks() {
                   descrEditing.linkIdx === linkIdx;
                 return (
                   <div className="flink-item" key={link.name}>
-                    {isEditing || isDescrEditing || isColorEditing ? (
-                      <img
-                        className="flink-item-avatar-img"
-                        src={link.avatar}
-                        alt={link.name}
-                        style={{ width: 36, height: 36, borderRadius: "50%" }}
-                        onError={e => (e.currentTarget.src = config.falldownAvatar)}
-                      />
-                    ) : (
-                      <div
-                        className="flink-item-avatar"
-                        style={{ cursor: "pointer" }}
-                        onClick={() => {
-                          setAvatarEditing({
-                            groupIdx,
-                            linkIdx,
-                            avatar: link.avatar,
-                          });
-                          setAvatarInput(link.avatar || "");
-                        }}
-                        dangerouslySetInnerHTML={{
-                          __html: `
+                    {/* 头像渲染 */}
+                    <div
+                      className="flink-item-avatar"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => {
+                        setAvatarEditing({
+                          groupIdx,
+                          linkIdx,
+                          avatar: link.avatar,
+                        });
+                        setAvatarInput(link.avatar || "");
+                        setEditing(Math.random());
+                      }}
+                      dangerouslySetInnerHTML={{
+                        __html: `
                             <img 
                                 class="flink-item-avatar-img lazy-img" 
                                 src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" 
@@ -546,14 +639,14 @@ export default function Flinks() {
                                 onerror="this.src='${config.falldownAvatar}';"
                             />
                           `,
-                        }}
-                      />
-                    )}
+                      }}
+                    />
+
                     <span className="flink-item-name">
                       {isEditing ? (
                         <Input
-                          value={editValue}
-                          onChange={(_, data) => setEditValue(data.value)}
+                          value={nameEditValue}
+                          onChange={(_, data) => setNameEditValue(data.value)}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") handleEditConfirm();
                             if (e.key === "Escape") handleEditCancel();
@@ -584,9 +677,10 @@ export default function Flinks() {
                         <>
                           <button
                             className="flink-item-button"
-                            onClick={() =>
-                              handleEdit(groupIdx, linkIdx, link.name)
-                            }
+                            onClick={() => {
+                              handleEdit(groupIdx, linkIdx, link.name);
+                              setEditing(Math.random());
+                            }}
                           >
                             <EditFilled />
                           </button>
@@ -638,7 +732,11 @@ export default function Flinks() {
                                     });
                                   } catch (e) {}
                                 } else {
-                                  messageBarRef.current?.addMessage("错误", "当前浏览器不支持取色器功能", "error");
+                                  messageBarRef.current?.addMessage(
+                                    "错误",
+                                    "当前浏览器不支持取色器功能",
+                                    "error"
+                                  );
                                 }
                               }}
                               style={{ marginLeft: 4 }}
@@ -650,10 +748,16 @@ export default function Flinks() {
                               onClick={async () => {
                                 const group = fLinks[groupIdx];
                                 const link = group.links[linkIdx];
-                                const updated = { ...link, color: colorEditing.color };
-                                const ok = await updateFlink(group.name, updated);
+                                const updated = {
+                                  ...link,
+                                  color: colorEditing.color,
+                                };
+                                const ok = await updateFlink(
+                                  group.name,
+                                  updated
+                                );
                                 if (ok) {
-                                  setFLinks(prev =>
+                                  setFLinks((prev) =>
                                     prev.map((g, gi) =>
                                       gi === groupIdx
                                         ? {
@@ -665,11 +769,20 @@ export default function Flinks() {
                                         : g
                                     )
                                   );
-                                  messageBarRef.current?.addMessage("提示", "颜色修改成功", "success");
+                                  messageBarRef.current?.addMessage(
+                                    "提示",
+                                    "颜色修改成功",
+                                    "success"
+                                  );
                                 } else {
-                                  messageBarRef.current?.addMessage("错误", "颜色修改失败", "error");
+                                  messageBarRef.current?.addMessage(
+                                    "错误",
+                                    "颜色修改失败",
+                                    "error"
+                                  );
                                 }
                                 setColorEditing(null);
+                                setEditing(Math.random());
                               }}
                               aria-label="确认"
                             />
@@ -677,7 +790,10 @@ export default function Flinks() {
                               appearance="subtle"
                               size="small"
                               icon={<Dismiss16Regular />}
-                              onClick={() => setColorEditing(null)}
+                              onClick={() => {
+                                setColorEditing(null);
+                                setEditing(Math.random());
+                              }}
                               aria-label="取消"
                             />
                             <span style={{ marginLeft: 8 }}>
@@ -693,15 +809,15 @@ export default function Flinks() {
                                 backgroundColor: link.color,
                               }}
                               title="点击编辑颜色"
-                              onClick={() =>
+                              onClick={() => {
                                 setColorEditing({
                                   groupIdx,
                                   linkIdx,
                                   color: link.color,
-                                })
-                              }
+                                });
+                                setEditing(Math.random());
+                              }}
                             />
-                            {link.color}
                             <span
                               className="flink-item-latency"
                               style={{ color: linkLatencyColor }}
@@ -750,17 +866,20 @@ export default function Flinks() {
                           <button
                             className="flink-item-button"
                             style={{ marginRight: 4 }}
-                            onClick={() =>
+                            onClick={() => {
                               handleDescrEdit(
                                 groupIdx,
                                 linkIdx,
                                 link.description || ""
-                              )
-                            }
+                              );
+                              setEditing(Math.random());
+                            }}
                           >
                             <ComposeRegular />
                           </button>
-                          {link.description}
+                          <div className="flink-item-descr-text">
+                            {link.description}
+                          </div>
                         </>
                       )}
                     </div>
@@ -770,7 +889,10 @@ export default function Flinks() {
 
                     <button
                       className="flink-item-button delete"
-                      onClick={() => setDeleteLinkInfo({ groupIdx, linkIdx })}
+                      onClick={() => {
+                        setDeleteLinkInfo({ groupIdx, linkIdx });
+                        setEditing(Math.random());
+                      }}
                       style={{ marginLeft: 2 }}
                       title="删除友链"
                     >
@@ -781,10 +903,11 @@ export default function Flinks() {
                       size="small"
                       icon={<ArrowLeftRegular />}
                       aria-label="移动分组"
-                      style={{ width: "100%" }}
+                      style={{ width: "fit-content" }}
                       onClick={() => {
                         setMoveLinkInfo({ groupIdx, linkIdx });
                         setMoveTargetGroup(null);
+                        setEditing(Math.random());
                       }}
                     >
                       移动分组
@@ -810,17 +933,26 @@ export default function Flinks() {
                   const groupName = fLinks[groupIdx].name;
                   const ok = await addFlink(groupName, newLink);
                   if (ok) {
-                    setFLinks(prev =>
+                    setFLinks((prev) =>
                       prev.map((group, gi) =>
                         gi === groupIdx
                           ? { ...group, links: [...group.links, newLink] }
                           : group
                       )
                     );
-                    messageBarRef.current?.addMessage("提示", "添加友链成功", "success");
+                    messageBarRef.current?.addMessage(
+                      "提示",
+                      "添加友链成功",
+                      "success"
+                    );
                   } else {
-                    messageBarRef.current?.addMessage("错误", "添加失败", "error");
+                    messageBarRef.current?.addMessage(
+                      "错误",
+                      "添加失败",
+                      "error"
+                    );
                   }
+                  setEditing(Math.random());
                 }}
               >
                 添加友链

@@ -6,5 +6,5 @@ declare interface Config{
 export const config:Config={
     backEndUrl: "https://blognext-end.yaria.top",
     blogUrl: "https://blog.yaria.top",
-    falldownAvatar: "https://bu.dusays.com/2024/09/06/66dabf7f748c8.jpg",
+    falldownAvatar: "https://img.0v0.my/2024/09/06/66dabf7f748c8.jpg",
 }
