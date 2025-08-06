@@ -139,3 +139,12 @@ export async function moveFlinkGroup(from_group: string, to_group: string, link_
     return false;
   }
 }
+
+export async function dispatchCheckLatencyWorkflow(): Promise<boolean> {
+  try {
+    const res = await fetch(`${config.backEndUrl}/update/flink/dispatchCheckLatencyWorkflow`);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}

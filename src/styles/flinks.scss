@@ -7,6 +7,11 @@
         padding: 10px;
     }
 
+    &-topbar {
+        display: flex;
+        gap: 10px;
+    }
+
     &-group {
         &-header {
             display: flex;
@@ -14,12 +19,18 @@
         }
 
         &-descr {
-            margin-bottom: 10px;
             width: 100%;
         }
-        &-addlinkbtn{
+
+        &-count {
+            width: 100%;
+            margin-bottom: 10px;
+            ;
+        }
+
+        &-addlinkbtn {
             height: fit-content;
-            margin-right: auto!important;
+            margin-right: auto !important;
         }
     }
 
@@ -56,11 +67,13 @@
             display: flex;
             height: fit-content;
             max-width: calc(100% - 20px);
-            &-edit{
+
+            &-edit {
                 width: calc(100% - 20px);
                 font-size: 14px;
                 line-height: 14px;
             }
+
             &-text {
                 flex: 1;
                 overflow: hidden;
@@ -78,13 +91,15 @@
             white-space: nowrap;
             margin-top: 5px;
             display: flex;
+
             &-edit {
-                width:100%;
+                width: 100%;
                 font-size: 14px;
                 line-height: 14px;
             }
-            &-text{
-                flex:1;
+
+            &-text {
+                flex: 1;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -124,11 +139,12 @@
                 height: 16px;
                 border: 1px solid gray;
                 outline: none;
-                padding:0;
+                padding: 0;
             }
         }
-        &-latency{
-            margin-left:5px;
+
+        &-latency {
+            margin-left: 5px;
         }
 
         &-button {
@@ -137,33 +153,39 @@
             border: none;
             background: none;
             cursor: pointer;
-            padding:0;
-            width:20px;
-            height:20px;
-            &.open{
+            padding: 0;
+            width: 20px;
+            height: 20px;
+
+            &.open {
                 position: absolute;
                 right: 15px;
                 top: 15px;
             }
-            &.editlink{
+
+            &.editlink {
                 position: absolute;
                 right: 15px;
                 top: 40px;
             }
-            &.delete{
+
+            &.delete {
                 position: absolute;
                 right: 15px;
                 top: 65px;
                 color: red;
-                &:hover{
+
+                &:hover {
                     color: gray;
                 }
             }
-            svg{
-                width:20px;
-                height:20px;
+
+            svg {
+                width: 20px;
+                height: 20px;
             }
-            &:hover{
+
+            &:hover {
                 color: var(--colorBrandForegroundInverted);
             }
         }

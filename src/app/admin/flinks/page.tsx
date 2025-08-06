@@ -10,6 +10,7 @@ import {
   updateGroup,
   updateFlink,
   moveFlinkGroup,
+  dispatchCheckLatencyWorkflow,
 } from "@/utils/flinks";
 import Link from "next/link";
 import React, { useEffect, useState, useRef } from "react";
@@ -23,9 +24,10 @@ import {
   OpenFilled,
   Color24Regular,
   DeleteRegular,
-  Add16Regular,
   ArrowLeftRegular,
   LinkEditRegular,
+  AddRegular,
+  ArrowClockwiseRegular,
 } from "@fluentui/react-icons";
 import {
   Input,
@@ -104,7 +106,15 @@ export default function Flinks() {
   useEffect(() => {
     const lazyLoadInstance = new LazyLoad({ elements_selector: ".lazy-img" });
     lazyLoadInstance.update();
-  }, [fLinks, editing, nameEditing, colorEditing, descrEditing, avatarEditing, urlEditing]);
+  }, [
+    fLinks,
+    editing,
+    nameEditing,
+    colorEditing,
+    descrEditing,
+    avatarEditing,
+    urlEditing,
+  ]);
 
   const handleEdit = (groupIdx: number, linkIdx: number, name: string) => {
     setNameEditing({ groupIdx, linkIdx });
@@ -524,7 +534,9 @@ export default function Flinks() {
               }
               max={1919810}
               min={-1919810}
-              onChange={(_, data) => setNewOrder(Number(data.displayValue ?? 0))}
+              onChange={(_, data) =>
+                setNewOrder(Number(data.displayValue ?? 0))
+              }
               placeholder="分组排序"
               style={{ width: "100%", boxSizing: "border-box" }}
             />
@@ -675,7 +687,7 @@ export default function Flinks() {
         <div className="flink-topbar">
           <Button
             appearance="primary"
-            icon={<Add16Regular />}
+            icon={<AddRegular />}
             onClick={() => {
               setNewOrder(
                 fLinks.length > 0
@@ -688,7 +700,37 @@ export default function Flinks() {
           >
             新建分组
           </Button>
+          <Button
+            appearance="secondary"
+            icon={<ArrowClockwiseRegular />}
+            onClick={() => {
+              dispatchCheckLatencyWorkflow().then((ok) => {
+                if (ok) {
+                  messageBarRef.current?.addMessage(
+                    "提示",
+                    "友链延迟检查已开始，可能需要几分钟，保持您的Internet连接，坐和放宽。",
+                    "success"
+                  );
+                } else {
+                  messageBarRef.current?.addMessage(
+                    "错误",
+                    "友链延迟检查失败",
+                    "error"
+                  );
+                }
+              });
+            }}
+          >
+            重新检查延迟
+          </Button>
         </div>
+        <h4 style={{marginTop:10, marginBottom: 0}}>
+          总计{" "}
+          {fLinks
+            .map((g) => g.links.length)
+            .reduce((prev, curr) => prev + curr, 0)}{" "}
+          个友链
+        </h4>
         {fLinks
           .slice()
           .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
@@ -706,6 +748,7 @@ export default function Flinks() {
                   size="small"
                   icon={<EditFilled />}
                   aria-label="编辑分组"
+                  title="编辑分组"
                   onClick={() => {
                     setGroupEditing({
                       groupIdx,
@@ -722,13 +765,62 @@ export default function Flinks() {
                   size="small"
                   icon={<DeleteRegular />}
                   aria-label="删除分组"
+                  title="删除分组"
                   onClick={() => {
                     setDeleteGroupIdx(groupIdx);
                     setEditing(Math.random());
                   }}
-                  style={{ verticalAlign: "middle", marginLeft: 4 }}
+                  style={{
+                    verticalAlign: "middle",
+                    marginLeft: 4,
+                    color: "red",
+                  }}
+                />
+                <Button
+                  appearance="subtle"
+                  icon={<AddRegular />}
+                  size="small"
+                  aria-label="添加该分组下友链"
+                  title="添加该分组下友链"
+                  onClick={async () => {
+                    const newLink = {
+                      name: "新友链喵",
+                      description: "114514",
+                      url: "https://0v0.my",
+                      color: "#66ccff",
+                      avatar: "https://img.0v0.my/2024/09/06/66dabf7f748c8.jpg",
+                      id: stringRandom(16, { letters: "abcdef" }),
+                      latency: 0.114,
+                    };
+                    const groupName = fLinks[groupIdx].name;
+                    const ok = await addFlink(groupName, newLink);
+                    if (ok) {
+                      setFLinks((prev) =>
+                        prev.map((group, gi) =>
+                          gi === groupIdx
+                            ? { ...group, links: [...group.links, newLink] }
+                            : group
+                        )
+                      );
+                      messageBarRef.current?.addMessage(
+                        "提示",
+                        "添加友链成功",
+                        "success"
+                      );
+                    } else {
+                      messageBarRef.current?.addMessage(
+                        "错误",
+                        "添加失败",
+                        "error"
+                      );
+                    }
+                    setEditing(Math.random());
+                  }}
                 />
                 <span className="flink-group-descr">{item.description}</span>
+                <span className="flink-group-count">
+                  共 {item.links.length} 个友链
+                </span>
               </div>
               <div className="flink-list">
                 {item.links.map((link, linkIdx) => {
@@ -1025,13 +1117,21 @@ export default function Flinks() {
                           </>
                         )}
                       </div>
-                      <Link className="flink-item-button open" href={link.url}>
+                      <Link
+                        className="flink-item-button open"
+                        href={link.url}
+                        aria-label="打开链接"
+                        title="打开链接"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         <OpenFilled />
                       </Link>
 
                       <button
                         className="flink-item-button editlink"
                         aria-label="编辑链接"
+                        title="编辑链接"
                         onClick={() => {
                           setUrlEditing({ groupIdx, linkIdx });
                           setUrlEditValue(link.url);
@@ -1048,6 +1148,7 @@ export default function Flinks() {
                         }}
                         style={{ marginLeft: 2 }}
                         title="删除友链"
+                        aria-label="删除友链"
                       >
                         <DeleteRegular />
                       </button>
@@ -1071,7 +1172,7 @@ export default function Flinks() {
                 {/* 添加友链按钮 */}
                 <Button
                   appearance="subtle"
-                  icon={<Add16Regular />}
+                  icon={<AddRegular />}
                   className="flink-group-addlinkbtn"
                   onClick={async () => {
                     const newLink = {
