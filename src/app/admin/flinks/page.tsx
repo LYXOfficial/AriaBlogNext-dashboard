@@ -708,7 +708,7 @@ export default function Flinks() {
                 if (ok) {
                   messageBarRef.current?.addMessage(
                     "提示",
-                    "友链延迟检查已开始，可能需要几分钟，保持您的Internet连接，坐和放宽。",
+                    "友链延迟检查已开始，可能需要几分钟，保持您的Internet连接到集线器，坐和放宽。",
                     "success"
                   );
                 } else {
