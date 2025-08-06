@@ -789,7 +789,7 @@ export default function Flinks() {
                       url: "https://0v0.my",
                       color: "#66ccff",
                       avatar: "https://img.0v0.my/2024/09/06/66dabf7f748c8.jpg",
-                      id: stringRandom(16, { letters: "abcdef" }),
+                      id: stringRandom(32, { letters: "abcdef" }),
                       latency: 0.114,
                     };
                     const groupName = fLinks[groupIdx].name;
@@ -1181,7 +1181,7 @@ export default function Flinks() {
                       url: "https://0v0.my",
                       color: "#66ccff",
                       avatar: "https://img.0v0.my/2024/09/06/66dabf7f748c8.jpg",
-                      id: stringRandom(16, { letters: "abcdef" }),
+                      id: stringRandom(32, { letters: "abcdef" }),
                       latency: 0.114,
                     };
                     const groupName = fLinks[groupIdx].name;
