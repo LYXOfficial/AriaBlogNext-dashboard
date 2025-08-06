@@ -8,11 +8,17 @@ function getHeader() {
   };
 }
 
+export async function refreshFlinksCache(){
+    try{await fetch(`${config.blogUrl}/refreshCache/flinks`);}
+    catch(e){}
+}
+
 export async function getFlinks(): Promise<FriendLinkGroup[]> {
   try {
     const res = await fetch(`${config.backEndUrl}/get/flink/flinks`);
     if (!res.ok) return [];
     const data = await res.json();
+    refreshFlinksCache();
     return data.data;
   } catch (e) {
     return [];
@@ -27,6 +33,7 @@ export async function addGroup(name: string, description = ""): Promise<boolean>
       headers: getHeader(),
       body: JSON.stringify({ name, description }),
     });
+    refreshFlinksCache();
     return res.ok;
   } catch {
     return false;
@@ -43,6 +50,7 @@ export async function deleteGroup(name: string): Promise<boolean> {
         headers: getHeader(),
       }
     );
+    refreshFlinksCache();
     return res.ok;
   } catch {
     return false;
@@ -57,6 +65,7 @@ export async function updateGroup(old_name: string, name: string, description = 
       headers: getHeader(),
       body: JSON.stringify({ old_name, name, description }),
     });
+    refreshFlinksCache();
     return res.ok;
   } catch {
     return false;
@@ -74,6 +83,7 @@ export async function addFlink(
       headers: getHeader(),
       body: JSON.stringify({ ...flink, group }),
     });
+    refreshFlinksCache();
     return res.ok;
   } catch {
     return false;
@@ -91,6 +101,7 @@ export async function updateFlink(
       headers: getHeader(),
       body: JSON.stringify({ ...flink, group }),
     });
+    refreshFlinksCache();
     return res.ok;
   } catch {
     return false;
@@ -107,6 +118,7 @@ export async function deleteFlink(group: string, id: string): Promise<boolean> {
         headers: getHeader(),
       }
     );
+    refreshFlinksCache();
     return res.ok;
   } catch {
     return false;
@@ -121,6 +133,7 @@ export async function moveFlinkGroup(from_group: string, to_group: string, link_
       headers: getHeader(),
       body: JSON.stringify({ from_group, to_group, link_id }),
     });
+    refreshFlinksCache();
     return res.ok;
   } catch {
     return false;

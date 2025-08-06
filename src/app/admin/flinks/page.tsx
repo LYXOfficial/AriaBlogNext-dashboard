@@ -516,29 +516,39 @@ export default function Flinks() {
                   descrEditing.linkIdx === linkIdx;
                 return (
                   <div className="flink-item" key={link.name}>
-                    <div
-                      className="flink-item-avatar"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => {
-                        setAvatarEditing({
-                          groupIdx,
-                          linkIdx,
-                          avatar: link.avatar,
-                        });
-                        setAvatarInput(link.avatar || "");
-                      }}
-                      dangerouslySetInnerHTML={{
-                        __html: `
-                          <img 
-                              class="flink-item-avatar-img lazy-img" 
-                              src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" 
-                              data-src="${link.avatar} "
-                              alt="${link.name}"
-                              onerror="this.src='${config.falldownAvatar}';"
-                          />
-                        `,
-                      }}
-                    />
+                    {isEditing || isDescrEditing || isColorEditing ? (
+                      <img
+                        className="flink-item-avatar-img"
+                        src={link.avatar}
+                        alt={link.name}
+                        style={{ width: 36, height: 36, borderRadius: "50%" }}
+                        onError={e => (e.currentTarget.src = config.falldownAvatar)}
+                      />
+                    ) : (
+                      <div
+                        className="flink-item-avatar"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => {
+                          setAvatarEditing({
+                            groupIdx,
+                            linkIdx,
+                            avatar: link.avatar,
+                          });
+                          setAvatarInput(link.avatar || "");
+                        }}
+                        dangerouslySetInnerHTML={{
+                          __html: `
+                            <img 
+                                class="flink-item-avatar-img lazy-img" 
+                                src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" 
+                                data-src="${link.avatar}"
+                                alt="${link.name}"
+                                onerror="this.src='${config.falldownAvatar}';"
+                            />
+                          `,
+                        }}
+                      />
+                    )}
                     <span className="flink-item-name">
                       {isEditing ? (
                         <Input
