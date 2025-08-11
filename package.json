@@ -10,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@fancyapps/ui": "^6.0.22",
     "@fluentui/react": "^8.120.8",
     "@fluentui/react-components": "^9.54.14",
     "@fluentui/react-icons": "^2.0.258",

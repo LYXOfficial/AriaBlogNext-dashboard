@@ -77,11 +77,11 @@ const tabs:TabItem[]=[
     link: "/admin/images",
     icon: <ImageRegular/>
   },
-  {
-    name: "设置",
-    link: "/admin/settings",
-    icon: <SettingsRegular/>
-  }
+  // {
+  //   name: "设置",
+  //   link: "/admin/settings",
+  //   icon: <SettingsRegular/>
+  // }
 ]
 export default function Page({
   children,

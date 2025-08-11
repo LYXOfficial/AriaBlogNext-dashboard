@@ -14,7 +14,7 @@ import AceEditor from 'react-ace';
 import mime from "mime";
 import { uploadImage } from "@/utils/image";
 import React from "react";
-const imageTypes=["image/png","image/jpeg","image/gif","image/webp","image/bmp","image/x-icon"];
+const imageTypes=["image/png","image/jpeg","image/gif","image/webp","image/jpg"];
 function BBItem({item,deleteHandler,saveHandler,pasteHandler,uploadWithTip,updated}:{item:BB,deleteHandler:()=>void,saveHandler:(content:string)=>void,pasteHandler:(editorRef:RefObject<AceEditor>,event:ClipboardEvent)=>void,uploadWithTip:(file:File)=>Promise<string>,updated:number}):ReactElement{
   const [editing,setEditing]=useState(false);
   const [saveEnable,setSaveEnable]=useState(false);

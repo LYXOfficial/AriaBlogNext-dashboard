@@ -437,7 +437,7 @@ export default function Flinks() {
           setEditing(Math.random());
         }}
         onConfirm={handleDeleteGroup}
-        content={<div>确定要删除该分组吗？分组下所有友链也会被删除！</div>}
+        content={<div>确定要删除该分组吗？分组下所有友链都会被永久删除！（真的很久！）</div>}
       />
 
       {/* 删除友链确认对话框 */}
@@ -449,7 +449,7 @@ export default function Flinks() {
           setEditing(Math.random());
         }}
         onConfirm={handleDeleteLink}
-        content={<div>确定要删除该友链吗？</div>}
+        content={<div>确定要删除该友链吗？将会被永久删除！（真的很久！）</div>}
       />
 
       {/* 新建分组对话框 */}
