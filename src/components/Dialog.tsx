@@ -166,7 +166,7 @@ export const EditPostDialog=(
                         }
                         else if(res[0].types.includes("text/plain")){
                           const text=await (await res[0].getType("text/plain")).text();
-                          if(((text.startsWith("https://")||text.startsWith("http://"))&&!text.startsWith("https://bu.dusays.com"))
+                          if(((text.startsWith("https://")||text.startsWith("http://"))&&!text.startsWith("https://img.0v0.my"))
                             &&(text.endsWith(".jpg")||text.endsWith(".png")||text.endsWith(".jpeg")||text.endsWith(".gif")||text.endsWith(".webp"))){
                               const tr=await fetch(text);
                               if(tr.ok){
