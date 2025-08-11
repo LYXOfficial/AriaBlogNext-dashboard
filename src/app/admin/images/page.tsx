@@ -494,7 +494,7 @@ export default function Page() {
               {/* 非选择模式下显示操作按钮 */}
               {!selectMode && (
                 <div className="op-btns">
-                  <Button
+                  {/* <Button
                     appearance="subtle"
                     className="op-btn reupload-btn"
                     size="small"
@@ -505,7 +505,7 @@ export default function Page() {
                       setReuploadTarget(img);
                       reuploadInputRef.current?.click();
                     }}
-                  />
+                  /> */}
                   <Button
                     icon={<DeleteRegular />}
                     appearance="subtle"
