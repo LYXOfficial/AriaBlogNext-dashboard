@@ -530,7 +530,7 @@ export default function Page(){
             messageBarRef.current?.addMessage("提示","保存失败","error");
           }
         }
-        return <BBItem item={item} deleteHandler={deleteHandler} saveHandler={saveHandler} pasteHandler={pasteHandler} uploadWithTip={uploadWithTip} updated={updated}/>;
+        return <BBItem key={item.time} item={item} deleteHandler={deleteHandler} saveHandler={saveHandler} pasteHandler={pasteHandler} uploadWithTip={uploadWithTip} updated={updated}/>;
       }));
     }
     const resizeHandler=()=>{
