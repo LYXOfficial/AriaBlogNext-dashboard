@@ -141,3 +141,27 @@ export async function reuploadImage(oldUrl: string, file: File): Promise<string>
   } catch (e) {}
   return "";
 }
+/**
+ * 把外链图片转存到自有图床（S3）。
+ * 成功返回新地址；失败返回空字符串（调用方自行决定是否保留原地址）。
+ */
+export async function rehostImageByUrl(url: string): Promise<string> {
+  try {
+    const res = await fetch(
+      `${config.backEndUrl}/update/image/rehostImageByUrl`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + (localStorage.getItem("token") ?? ""),
+        },
+        body: JSON.stringify({ url }),
+      }
+    );
+    if (!res.ok) return "";
+    const data = await res.json();
+    return (data?.data?.url as string) ?? "";
+  } catch {
+    return "";
+  }
+}

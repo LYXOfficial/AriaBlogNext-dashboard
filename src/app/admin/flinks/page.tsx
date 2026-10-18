@@ -1,6 +1,6 @@
 "use client";
 import { config } from "@/dashboardConfig";
-import { FriendLinkGroup } from "@/interfaces/flink";
+import { FriendLink, FriendLinkGroup, FlinkApplication } from "@/interfaces/flink";
 import {
   getFlinks,
   addFlink,
@@ -11,6 +11,9 @@ import {
   updateFlink,
   moveFlinkGroup,
   dispatchCheckLatencyWorkflow,
+  getApplications,
+  approveApplication,
+  rejectApplication,
 } from "@/utils/flinks";
 import Link from "next/link";
 import React, { useEffect, useState, useRef } from "react";
@@ -36,8 +39,18 @@ import {
   Dropdown,
   Option,
   SpinButton,
+  Textarea,
+  Checkbox,
+  Dialog,
+  DialogSurface,
+  DialogBody,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  ProgressBar,
 } from "@fluentui/react-components";
 import { BaseDialog } from "@/components/Dialog";
+import { rehostImageByUrl, uploadImage } from "@/utils/image";
 import Messages, { MessagesRef } from "@/components/Messages";
 import "@/styles/flinks.scss";
 import stringRandom from "string-random";
@@ -96,13 +109,234 @@ export default function Flinks() {
   } | null>(null);
   const [urlEditValue, setUrlEditValue] = useState("");
 
+  // 友链申请（待审核）
+  const [applications, setApplications] = useState<FlinkApplication[]>([]);
+  const [approveTarget, setApproveTarget] = useState<FlinkApplication | null>(null);
+  const [approveForm, setApproveForm] = useState({
+    group: "",
+    name: "",
+    link: "",
+    avatar: "",
+    descr: "",
+    color: "#888888",
+  });
+  const [rejectTarget, setRejectTarget] = useState<FlinkApplication | null>(null);
+  // 拒绝理由：留空表示静默丢弃（不发邮件）
+  const [rejectReason, setRejectReason] = useState("");
+  // 通过时是否把头像转存到本站图床
+  const [rehostAvatar, setRehostAvatar] = useState(true);
+  // 本站图床前缀（来自 dashboardConfig.imageHost）/ 批量转存状态 / 单个头像转存状态
+  const imageHost = (config.imageHost || "").replace(/\/$/, "");
+  const [rehostingAll, setRehostingAll] = useState(false);
+  // 批量转存进度弹窗的数据
+  const [rehostTask, setRehostTask] = useState<{
+    running: boolean;
+    note?: string;
+    items: {
+      name: string;
+      avatar: string;
+      status: "pending" | "running" | "done" | "skipped";
+      note?: string;
+    }[];
+  } | null>(null);
+  const [rehostingAvatar, setRehostingAvatar] = useState(false);
+
   useEffect(() => {
     (async () => {
       // 拉取后排序
       const groups = await getFlinks();
       setFLinks(groups.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
     })();
+    loadApplications().catch(() => undefined);
   }, []);
+
+  // ---------- 友链申请审批 ----------
+
+  const reloadGroups = async () => {
+    const groups = await getFlinks();
+    setFLinks(groups.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
+  };
+
+  const loadApplications = async () => {
+    setApplications(await getApplications());
+  };
+
+  useEffect(() => {
+    loadApplications();
+  }, []);
+
+  // 通过前可修改信息：默认用申请内容，修改申请默认定位到它原本所在的分组
+  /** 该地址是否已经在本站图床 */
+  // 批量转存进度统计
+  const rehostDone = rehostTask
+    ? rehostTask.items.filter((i) => i.status === "done").length
+    : 0;
+  const rehostSkipped = rehostTask
+    ? rehostTask.items.filter((i) => i.status === "skipped").length
+    : 0;
+  const rehostFinished = rehostDone + rehostSkipped;
+  const rehostTotal = rehostTask?.items.length ?? 0;
+
+  const isOwnHost = (url: string) =>
+    !!imageHost && !!url && url.startsWith(imageHost);
+
+  /** 批量转存：把所有不在本站图床的头像下载后转存，图片无法访问的跳过 */
+  const rehostAllAvatars = async () => {
+    const host = imageHost;
+    const targets: { group: string; link: FriendLink }[] = [];
+    fLinks.forEach((g) =>
+      g.links.forEach((l) => {
+        if (l.avatar && !(host && l.avatar.startsWith(host))) {
+          targets.push({ group: g.name, link: l });
+        }
+      })
+    );
+
+    setRehostTask({
+      running: targets.length > 0,
+      note: targets.length === 0 ? "所有头像都已在图床，无需转存" : undefined,
+      items: targets.map((t) => ({
+        name: t.link.name,
+        avatar: t.link.avatar,
+        status: "pending" as const,
+      })),
+    });
+    if (targets.length === 0) return;
+
+    const patch = (index: number, data: Partial<{ status: "done" | "skipped" | "running"; note: string }>) =>
+      setRehostTask((prev) =>
+        prev
+          ? {
+              ...prev,
+              items: prev.items.map((item, i) =>
+                i === index ? { ...item, ...data } : item
+              ),
+            }
+          : prev
+      );
+
+    setRehostingAll(true);
+    try {
+      for (let i = 0; i < targets.length; i++) {
+        const { group, link } = targets[i];
+        patch(i, { status: "running" });
+        const url = await rehostImageByUrl(link.avatar);
+        if (!url) {
+          patch(i, { status: "skipped", note: "图片无法访问" });
+          continue;
+        }
+        const updated = { ...link, avatar: url };
+        if (!(await updateFlink(group, updated))) {
+          patch(i, { status: "skipped", note: "写入失败" });
+          continue;
+        }
+        patch(i, { status: "done" });
+        setFLinks((prev) =>
+          prev.map((g) =>
+            g.name === group
+              ? { ...g, links: g.links.map((l) => (l.id === link.id ? updated : l)) }
+              : g
+          )
+        );
+      }
+    } finally {
+      setRehostTask((prev) => (prev ? { ...prev, running: false } : prev));
+      setRehostingAll(false);
+    }
+  };
+
+  const openApproveDialog = (app: FlinkApplication) => {
+    setApproveTarget(app);
+    setApproveForm({
+      group: app.targetGroup || fLinks[fLinks.length - 1]?.name || "",
+      name: app.name,
+      link: app.link,
+      avatar: app.avatar,
+      descr: app.descr,
+      color: app.color || "#888888",
+    });
+    setEditing(Math.random());
+  };
+
+  const confirmApprove = async () => {
+    if (!approveTarget) return;
+    const target = approveTarget;
+
+    // 可选：先把头像下载并转存到本站图床
+    let avatar = approveForm.avatar;
+    let rehostFailed = false;
+    if (rehostAvatar && avatar.trim()) {
+      messageBarRef.current?.addMessage("提示", "正在把头像转存到图床…", "info");
+      const uploaded = await rehostImageByUrl(avatar.trim());
+      if (uploaded) avatar = uploaded;
+      else rehostFailed = true;
+    }
+
+    const result = await approveApplication({
+      id: target.id,
+      ...approveForm,
+      avatar,
+    });
+    if (result.ok) {
+      setApplications((prev) => prev.filter((a) => a.id !== target.id));
+      await reloadGroups();
+      const base =
+        target.type === 1 ? "修改已应用，友链信息已更新" : "已通过，友链已加入列表";
+      messageBarRef.current?.addMessage(
+        "提示",
+        base +
+          (!target.email
+            ? "，申请人未填写邮箱，未发送通知"
+            : result.mailSent
+              ? "，已通知申请人"
+              : "，但通知邮件未发出（可让申请人用邮箱自查）") +
+          (rehostAvatar
+            ? rehostFailed
+              ? "，头像转存失败已保留原地址"
+              : "，头像已转存到图床"
+            : ""),
+        "success"
+      );
+    } else {
+      messageBarRef.current?.addMessage(
+        "错误",
+        target.type === 1 ? "应用修改失败（原友链可能已被删除）" : "通过失败，请重试",
+        "error"
+      );
+    }
+    setApproveTarget(null);
+    setEditing(Math.random());
+  };
+
+  const confirmReject = async () => {
+    if (!rejectTarget) return;
+    const target = rejectTarget;
+    const reason = rejectReason.trim();
+    const result = await rejectApplication(target.id, reason);
+    if (result.ok) {
+      setApplications((prev) => prev.filter((a) => a.id !== target.id));
+      messageBarRef.current?.addMessage(
+        "提示",
+        reason
+          ? result.mailSent
+            ? "已拒绝，并已把理由邮件告知对方"
+            : "已拒绝（理由邮件发送失败，对方可用邮箱自查）"
+          : "已拒绝并静默丢弃（未发送邮件）",
+        "success"
+      );
+    } else {
+      messageBarRef.current?.addMessage("错误", "拒绝失败，请重试", "error");
+    }
+    setRejectTarget(null);
+    setRejectReason("");
+    setEditing(Math.random());
+  };
+
+  // 修改申请：拿出现网信息用于对比
+  const findCurrentLink = (app: FlinkApplication) =>
+    app.type === 1
+      ? fLinks.flatMap((g) => g.links).find((l) => l.id === app.targetId)
+      : undefined;
   useEffect(() => {
     const lazyLoadInstance = new LazyLoad({ elements_selector: ".lazy-img" });
     lazyLoadInstance.update();
@@ -309,7 +543,28 @@ export default function Flinks() {
           setEditing(Math.random());
         }}
         content={
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <div
+            style={{ display: "flex", gap: 6, alignItems: "center" }}
+            onPaste={async (e) => {
+              // 支持直接粘贴剪贴板里的图片：上传后填入链接
+              const items = e.clipboardData?.items ?? [];
+              for (const item of items) {
+                if (!item.type.startsWith("image/")) continue;
+                const file = item.getAsFile();
+                if (!file) continue;
+                e.preventDefault();
+                e.stopPropagation();
+                const url = await uploadImage(file);
+                if (url) {
+                  setAvatarInput(url);
+                  messageBarRef.current?.addMessage("提示", "已上传剪贴板图片", "success");
+                } else {
+                  messageBarRef.current?.addMessage("错误", "剪贴板图片上传失败", "error");
+                }
+                return;
+              }
+            }}
+          >
             {avatarInput && (
               <img
                 src={avatarInput}
@@ -330,6 +585,37 @@ export default function Flinks() {
               icon={<ArrowUploadFilled />}
               style={{ height: "fit-content" }}
             />
+            <Button
+              appearance="secondary"
+              disabled={rehostingAvatar || !avatarInput || isOwnHost(avatarInput)}
+              title={
+                isOwnHost(avatarInput)
+                  ? "已经在自有图床，无需转存"
+                  : "下载这张图片并转存到本站图床"
+              }
+              onClick={async () => {
+                if (!avatarInput.trim() || isOwnHost(avatarInput)) return;
+                setRehostingAvatar(true);
+                try {
+                  const url = await rehostImageByUrl(avatarInput.trim());
+                  if (url) {
+                    setAvatarInput(url);
+                    messageBarRef.current?.addMessage("提示", "已转存到自有图床", "success");
+                  } else {
+                    messageBarRef.current?.addMessage(
+                      "错误",
+                      "转存失败（图片可能无法访问或格式不支持）",
+                      "error"
+                    );
+                  }
+                } finally {
+                  setRehostingAvatar(false);
+                }
+              }}
+              style={{ height: "fit-content", whiteSpace: "nowrap" }}
+            >
+              {rehostingAvatar ? "转存中…" : "转存"}
+            </Button>
             <div>
               <input
                 ref={uploadRef}
@@ -682,7 +968,295 @@ export default function Flinks() {
         }
       />
 
+      {/* 友链申请 —— 通过（可先修改信息、选择分组） */}
+      <BaseDialog
+        title={approveTarget?.type === 1 ? "应用修改申请" : "通过友链申请"}
+        open={!!approveTarget}
+        onClose={() => {
+          setApproveTarget(null);
+          setEditing(Math.random());
+        }}
+        onConfirm={confirmApprove}
+        content={
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {approveTarget?.type === 1 && (
+              <div className="flink-application-current">
+                {findCurrentLink(approveTarget)
+                  ? `现网信息：${findCurrentLink(approveTarget)!.name} · ${
+                      findCurrentLink(approveTarget)!.url
+                    } · ${findCurrentLink(approveTarget)!.description}`
+                  : "⚠️ 未找到对应的友链，应用修改可能会失败"}
+              </div>
+            )}
+            <Label>加入分组</Label>
+            <Dropdown
+              value={approveForm.group || "请选择分组"}
+              onOptionSelect={(_, data) =>
+                setApproveForm((p) => ({
+                  ...p,
+                  group: String(data.optionValue ?? ""),
+                }))
+              }
+              style={{ width: "100%" }}
+            >
+              {fLinks.map((g) => (
+                <Option key={g.name} value={g.name}>
+                  {g.name}
+                </Option>
+              ))}
+            </Dropdown>
+            <Label>站点名称</Label>
+            <Input
+              value={approveForm.name}
+              onChange={(_, d) => setApproveForm((p) => ({ ...p, name: d.value }))}
+            />
+            <Label>网站链接</Label>
+            <Input
+              value={approveForm.link}
+              onChange={(_, d) => setApproveForm((p) => ({ ...p, link: d.value }))}
+            />
+            <Label>头像链接</Label>
+            <Input
+              value={approveForm.avatar}
+              onChange={(_, d) => setApproveForm((p) => ({ ...p, avatar: d.value }))}
+            />
+            <Label>站点描述</Label>
+            <Textarea
+              value={approveForm.descr}
+              resize="vertical"
+              onChange={(_, d) => setApproveForm((p) => ({ ...p, descr: d.value }))}
+            />
+            <Label>背景色</Label>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <input
+                type="color"
+                value={
+                  /^#[0-9a-fA-F]{6}$/.test(approveForm.color)
+                    ? approveForm.color
+                    : "#888888"
+                }
+                onChange={(e) =>
+                  setApproveForm((p) => ({ ...p, color: e.target.value }))
+                }
+                style={{ width: 42, height: 32, padding: 2, cursor: "pointer" }}
+              />
+              <Input
+                value={approveForm.color}
+                onChange={(_, d) => setApproveForm((p) => ({ ...p, color: d.value }))}
+                style={{ flex: 1 }}
+              />
+            </div>
+            <Checkbox
+              checked={rehostAvatar}
+              onChange={(_, d) => setRehostAvatar(!!d.checked)}
+              label="把头像转存到自有图床"
+            />
+            <div style={{ fontSize: 12, opacity: 0.7 }}>
+              {approveTarget?.email
+                ? `邮箱：${approveTarget.email}（通过后会发送通知邮件）`
+                : "申请人未填写邮箱（通过后不会发送通知）"}
+            </div>
+          </div>
+        }
+      />
+
+      {/* 友链申请 —— 拒绝（直接删除，与老站一致） */}
+      <BaseDialog
+        title="拒绝友链申请"
+        open={!!rejectTarget}
+        onClose={() => {
+          setRejectTarget(null);
+          setRejectReason("");
+          setEditing(Math.random());
+        }}
+        onConfirm={confirmReject}
+        content={
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div>
+              确定拒绝 <b>{rejectTarget?.name}</b>（{rejectTarget?.link}）的申请吗？
+            </div>
+            <Label>拒绝理由（可选）</Label>
+            <Textarea
+              value={rejectReason}
+              resize="vertical"
+              placeholder="可选：填写后会通过邮件告知对方"
+              onChange={(_, d) => setRejectReason(d.value)}
+            />
+            <div style={{ fontSize: 12, opacity: 0.7 }}>
+              {rejectReason.trim() ? "将发送邮件通知对方。" : ""}
+              申请记录会保留 14 天，申请人可自行查询结果。
+            </div>
+          </div>
+        }
+      />
+
+      {/* 批量转存进度 */}
+      <Dialog
+        open={!!rehostTask}
+        onOpenChange={(_, data) => {
+          if (!data.open && !rehostTask?.running) setRehostTask(null);
+        }}
+      >
+        <DialogSurface>
+          <DialogBody>
+            <DialogTitle>转存友链头像</DialogTitle>
+            <DialogContent>
+              {rehostTotal > 0 ? (
+                <>
+                  <div className="flink-rehost-summary">
+                    {rehostTask?.running
+                      ? `正在转存：已完成 ${rehostFinished}/${rehostTotal}`
+                      : `处理完成：成功 ${rehostDone} 个，跳过 ${rehostSkipped} 个`}
+                  </div>
+                  <ProgressBar
+                    value={rehostTotal ? rehostFinished / rehostTotal : 0}
+                    thickness="large"
+                  />
+                  <ul className="flink-rehost-list">
+                    {rehostTask?.items.map((item, i) => (
+                      <li key={`${item.avatar}-${i}`}>
+                        <span className="flink-rehost-name" title={item.name}>
+                          {item.name}
+                        </span>
+                        <ProgressBar
+                          className="flink-rehost-bar"
+                          value={
+                            item.status === "pending"
+                              ? 0
+                              : item.status === "running"
+                                ? undefined
+                                : 1
+                          }
+                          color={
+                            item.status === "skipped"
+                              ? "error"
+                              : item.status === "done"
+                                ? "success"
+                                : "brand"
+                          }
+                          thickness="medium"
+                        />
+                        <span className={`flink-rehost-state ${item.status}`}>
+                          {item.status === "pending"
+                            ? "等待中"
+                            : item.status === "running"
+                              ? "转存中…"
+                              : item.status === "done"
+                                ? "已转存"
+                                : item.note || "已跳过"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <div>{rehostTask?.note}</div>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button
+                appearance="primary"
+                disabled={rehostTask?.running}
+                onClick={() => setRehostTask(null)}
+              >
+                关闭
+              </Button>
+            </DialogActions>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
+
       <h1>友链</h1>
+
+      <div className="flink-toolbar">
+        <Button
+          appearance="secondary"
+          icon={<ArrowClockwiseRegular />}
+          disabled={rehostingAll}
+          title={
+            imageHost
+              ? "把所有不在本站图床的头像下载后转存，无法访问的会自动跳过"
+              : "把所有不在本站图床的头像下载后转存，图片无法访问的会自动跳过"
+          }
+          onClick={rehostAllAvatars}
+        >
+          {rehostingAll ? "转存中…" : "一键转存所有外链头像"}
+        </Button>
+      </div>
+
+      {applications.length > 0 && (
+        <div className="flink-applications">
+          <h2 className="flink-applications-title">
+            待审核申请
+            <span className="flink-applications-count">{applications.length}</span>
+          </h2>
+          {applications.map((app) => (
+            <div className="flink-application" key={app.id}>
+              <img
+                className="flink-application-avatar"
+                src={app.avatar}
+                alt=""
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = config.falldownAvatar;
+                }}
+              />
+              <div className="flink-application-main">
+                <div className="flink-application-head">
+                  <span
+                    className={`flink-application-tag${
+                      app.type === 1 ? " modify" : ""
+                    }`}
+                  >
+                    {app.type === 1 ? "修改申请" : "新增申请"}
+                  </span>
+                  <b>{app.name}</b>
+                  <a href={app.link} target="_blank" rel="noreferrer">
+                    {app.link}
+                  </a>
+                </div>
+                <div className="flink-application-descr">{app.descr}</div>
+                <div className="flink-application-meta">
+                  {app.email || "未填写邮箱"}
+                  {app.createdAt
+                    ? ` · ${new Date(app.createdAt).toLocaleString("zh-CN")}`
+                    : ""}
+                </div>
+                {app.type === 1 && (
+                  <div className="flink-application-current">
+                    {findCurrentLink(app)
+                      ? `现网信息：${findCurrentLink(app)!.name} · ${
+                          findCurrentLink(app)!.url
+                        } · ${findCurrentLink(app)!.description}`
+                      : "⚠️ 未找到对应的友链（可能已被删除或移动分组）"}
+                  </div>
+                )}
+              </div>
+              <div className="flink-application-actions">
+                <Button
+                  appearance="primary"
+                  size="small"
+                  icon={<Checkmark16Regular />}
+                  onClick={() => openApproveDialog(app)}
+                >
+                  通过
+                </Button>
+                <Button
+                  appearance="secondary"
+                  size="small"
+                  icon={<Dismiss16Regular />}
+                  onClick={() => {
+                    setRejectTarget(app);
+                    setRejectReason("");
+                    setEditing(Math.random());
+                  }}
+                >
+                  拒绝
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="flink-groups">
         <div className="flink-topbar">
           <Button

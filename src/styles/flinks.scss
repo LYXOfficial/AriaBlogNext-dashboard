@@ -7,6 +7,66 @@
         padding: 10px;
     }
 
+    &-rehost-summary {
+        margin-bottom: 8px;
+        font-size: 13px;
+    }
+
+    &-rehost-list {
+        list-style: none;
+        margin: 14px 0 0;
+        padding: 0;
+        max-height: 320px;
+        overflow-y: auto;
+
+        li {
+            display: grid;
+            grid-template-columns: minmax(70px, 1fr) 2fr auto;
+            gap: 10px;
+            align-items: center;
+            padding: 6px 0;
+        }
+    }
+
+    &-rehost-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 13px;
+    }
+
+    &-rehost-bar {
+        min-width: 80px;
+    }
+
+    &-rehost-state {
+        font-size: 12px;
+        opacity: 0.7;
+        white-space: nowrap;
+
+        &.done {
+            color: #2e7d32;
+            opacity: 1;
+        }
+
+        &.skipped {
+            color: #c62828;
+            opacity: 1;
+        }
+
+        &.running {
+            opacity: 1;
+        }
+    }
+
+    &-toolbar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 10px 0 16px;
+    }
+
     &-topbar {
         display: flex;
         gap: 10px;
@@ -184,6 +244,131 @@
 
             &:hover {
                 color: var(--colorBrandForegroundInverted);
+            }
+        }
+    }
+
+    // ---------- 友链申请（待审核） ----------
+
+    &-applications {
+        margin: 10px 0 25px;
+        padding: 15px;
+        border-radius: 15px;
+        background-color: var(--colorNeutralBackground1);
+        box-shadow: 0 0 10px #00000021;
+    }
+
+    &-applications-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 12px;
+        font-size: 18px;
+    }
+
+    &-applications-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 22px;
+        height: 22px;
+        padding: 0 6px;
+        font-size: 12px;
+        /* 原来的 brandForegroundInverted 实际渲染成了低对比粉色，这里直接给白色 */
+        color: #fff;
+        font-weight: 600;
+        background-color: var(--colorBrandBackground);
+        border-radius: 11px;
+    }
+
+    &-application {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 12px;
+        border-radius: 10px;
+        background-color: var(--colorNeutralBackground2);
+        margin-bottom: 10px;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+
+        &-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex: 0 0 auto;
+            background-color: var(--colorNeutralBackground4);
+        }
+
+        &-main {
+            flex: 1;
+            min-width: 0;
+        }
+
+        &-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+
+            a {
+                color: var(--colorBrandForeground1);
+                word-break: break-all;
+                font-size: 13px;
+            }
+        }
+
+        &-tag {
+            padding: 1px 8px;
+            font-size: 12px;
+            color: #fff;
+            background-color: #2e9e5b;
+            border-radius: 10px;
+            flex: 0 0 auto;
+
+            &.modify {
+                background-color: #d98324;
+            }
+        }
+
+        &-descr {
+            margin: 6px 0;
+            font-size: 13px;
+            word-break: break-word;
+        }
+
+        &-meta {
+            font-size: 12px;
+            opacity: 0.6;
+            word-break: break-all;
+        }
+
+        &-current {
+            margin-top: 6px;
+            padding: 6px 10px;
+            font-size: 12.5px;
+            border-left: 3px solid #d98324;
+            background-color: var(--colorNeutralBackground3);
+            border-radius: 4px;
+            word-break: break-word;
+        }
+
+        &-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 0 0 auto;
+        }
+
+        @media screen and (max-width: 600px) {
+            flex-wrap: wrap;
+
+            &-actions {
+                flex-direction: row;
+                width: 100%;
             }
         }
     }

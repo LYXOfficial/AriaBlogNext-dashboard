@@ -1,5 +1,5 @@
 import { config } from "@/dashboardConfig";
-import { FriendLinkGroup, FriendLink } from "@/interfaces/flink";
+import { FriendLinkGroup, FriendLink, FlinkApplication } from "@/interfaces/flink";
 
 function getHeader() {
   return {
@@ -142,9 +142,82 @@ export async function moveFlinkGroup(from_group: string, to_group: string, link_
 
 export async function dispatchCheckLatencyWorkflow(): Promise<boolean> {
   try {
-    const res = await fetch(`${config.backEndUrl}/update/flink/dispatchCheckLatencyWorkflow`);
+    const res = await fetch(
+      `${config.backEndUrl}/update/flink/dispatchCheckLatencyWorkflow`,
+      { headers: getHeader() }
+    );
     return res.ok;
   } catch {
     return false;
+  }
+}
+
+// ---------- 友链申请审批 ----------
+
+// 待审核申请列表（新增申请与修改申请都在其中）
+export async function getApplications(): Promise<FlinkApplication[]> {
+  try {
+    const res = await fetch(`${config.backEndUrl}/update/flink/applications`, {
+      headers: getHeader(),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.data ?? [];
+  } catch {
+    return [];
+  }
+}
+
+// 通过申请：group 为目标分组；其余字段可在通过前修改后再提交
+// 返回 mailSent 表示「通过后给申请人的通知邮件」是否发出（SMTP 未配置时为 false）
+export async function approveApplication(payload: {
+  id: string;
+  group: string;
+  name?: string;
+  link?: string;
+  avatar?: string;
+  descr?: string;
+  color?: string;
+}): Promise<{ ok: boolean; mailSent: boolean }> {
+  try {
+    const res = await fetch(
+      `${config.backEndUrl}/update/flink/approveApplication`,
+      {
+        method: "POST",
+        headers: getHeader(),
+        body: JSON.stringify(payload),
+      }
+    );
+    if (!res.ok) return { ok: false, mailSent: false };
+    refreshFlinksCache();
+    // mailSent 表示通过后给申请人发的通知是否成功（SMTP 未配置时为 false）
+    const data = await res.json().catch(() => null);
+    return { ok: true, mailSent: data?.mailSent === true };
+  } catch {
+    return { ok: false, mailSent: false };
+  }
+}
+
+// 拒绝申请：可选填写理由。
+// 填了理由 -> 后端会给申请人发邮件说明；不填 -> 静默丢弃（不发邮件）。
+// 申请记录会保留 14 天（申请人可自查），到期后后端自动清理。
+export async function rejectApplication(
+  id: string,
+  reason = ""
+): Promise<{ ok: boolean; mailSent: boolean }> {
+  try {
+    const res = await fetch(
+      `${config.backEndUrl}/update/flink/rejectApplication`,
+      {
+        method: "POST",
+        headers: getHeader(),
+        body: JSON.stringify({ id, reason }),
+      }
+    );
+    if (!res.ok) return { ok: false, mailSent: false };
+    const data = await res.json().catch(() => null);
+    return { ok: true, mailSent: data?.mailSent === true };
+  } catch {
+    return { ok: false, mailSent: false };
   }
 }
