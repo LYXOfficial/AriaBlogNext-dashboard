@@ -78,6 +78,39 @@
         margin:5px 0;
     }
 }
+.dialog-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: var(--colorNeutralBackground3, #f5f5f5);
+    border: 1px solid var(--colorNeutralStroke3, #eeeeee);
+}
+
+.dialog-summary-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.dialog-summary-tip {
+    font-size: 12px;
+    line-height: 1.6;
+    opacity: 0.7;
+}
+
+.dialog-summary-hint {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--colorBrandForeground1, #c5343e);
+
+    &.error {
+        color: var(--colorPaletteRedForeground1, #c50f1f);
+    }
+}
+
 .combobox-tag{
     list-style: none;
     margin-right: 5px;

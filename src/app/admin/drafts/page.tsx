@@ -129,6 +129,7 @@ export default function Drafts(){
             icon={<Add16Filled/>}
             onClick={()=>{
               setEditPostDialogState({
+                allowSummary:false,
                 open:true,
                 title:"新建文章",
                 post:{
