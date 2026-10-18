@@ -262,10 +262,11 @@ export default function Flinks() {
     if (!approveTarget) return;
     const target = approveTarget;
 
-    // 可选：先把头像下载并转存到本站图床
+    // 可选：先把头像下载并转存到本站图床（已经在自有图床的就跳过）
     let avatar = approveForm.avatar;
     let rehostFailed = false;
-    if (rehostAvatar && avatar.trim()) {
+    const needRehost = rehostAvatar && !isOwnHost(avatar.trim()) && !!avatar.trim();
+    if (needRehost) {
       messageBarRef.current?.addMessage("提示", "正在把头像转存到图床…", "info");
       const uploaded = await rehostImageByUrl(avatar.trim());
       if (uploaded) avatar = uploaded;
@@ -280,8 +281,16 @@ export default function Flinks() {
     if (result.ok) {
       setApplications((prev) => prev.filter((a) => a.id !== target.id));
       await reloadGroups();
+      const movedGroup =
+        target.type === 1 &&
+        !!approveForm.group &&
+        approveForm.group !== target.targetGroup;
       const base =
-        target.type === 1 ? "修改已应用，友链信息已更新" : "已通过，友链已加入列表";
+        target.type === 1
+          ? movedGroup
+            ? `修改已应用，并已移动到「${approveForm.group}」分组`
+            : "修改已应用，友链信息已更新"
+          : "已通过，友链已加入列表";
       messageBarRef.current?.addMessage(
         "提示",
         base +
@@ -290,7 +299,7 @@ export default function Flinks() {
             : result.mailSent
               ? "，已通知申请人"
               : "，但通知邮件未发出（可让申请人用邮箱自查）") +
-          (rehostAvatar
+          (needRehost
             ? rehostFailed
               ? "，头像转存失败已保留原地址"
               : "，头像已转存到图床"
@@ -337,6 +346,72 @@ export default function Flinks() {
     app.type === 1
       ? fLinks.flatMap((g) => g.links).find((l) => l.id === app.targetId)
       : undefined;
+
+  /** 修改申请的「当前 → 修改后」逐字段对比 */
+  const renderModifyDiff = (
+    app: FlinkApplication,
+    compact = false,
+    after?: { name: string; link: string; avatar: string; descr: string; color: string }
+  ) => {
+    const current = findCurrentLink(app);
+    if (!current) {
+      return (
+        <div className="flink-diff-warn">
+          ⚠️ 未找到对应的友链（可能已被删除或移动分组），应用修改可能会失败
+        </div>
+      );
+    }
+    const rows = [
+      { key: "name", label: "名称", before: current.name, after: after?.name ?? app.name, color: false },
+      { key: "url", label: "网址", before: current.url, after: after?.link ?? app.link, color: false },
+      { key: "avatar", label: "头像", before: current.avatar, after: after?.avatar ?? app.avatar, color: false },
+      {
+        key: "descr",
+        label: "描述",
+        before: current.description,
+        after: after?.descr ?? app.descr,
+        color: false,
+      },
+      { key: "color", label: "背景色", before: current.color, after: after?.color ?? app.color, color: true },
+    ].map((row) => ({
+      ...row,
+      changed: (row.before ?? "") !== (row.after ?? ""),
+    }));
+    const changedRows = rows.filter((row) => row.changed);
+    const shown = compact ? changedRows : rows;
+
+    if (compact && changedRows.length === 0) {
+      return <div className="flink-diff-empty">内容没有变化</div>;
+    }
+
+    return (
+      <div className={`flink-diff${compact ? " compact" : ""}`}>
+        <div className="flink-diff-title">
+          {compact ? "申请把这几项改成" : "修改对比"}
+          <span>{changedRows.length} 项变化</span>
+        </div>
+        {shown.map((row) => (
+          <div
+            key={row.key}
+            className={`flink-diff-row${row.changed ? " changed" : ""}`}
+          >
+            <span className="flink-diff-label">{row.label}</span>
+            <span className="flink-diff-before" title={row.before}>
+              {row.color && row.before ? (
+                <i style={{ backgroundColor: row.before }} />
+              ) : null}
+              {row.before || "（空）"}
+            </span>
+            <span className="flink-diff-arrow">→</span>
+            <span className="flink-diff-after" title={row.after}>
+              {row.color && row.after ? <i style={{ backgroundColor: row.after }} /> : null}
+              {row.after || "（空）"}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  };
   useEffect(() => {
     const lazyLoadInstance = new LazyLoad({ elements_selector: ".lazy-img" });
     lazyLoadInstance.update();
@@ -979,15 +1054,8 @@ export default function Flinks() {
         onConfirm={confirmApprove}
         content={
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {approveTarget?.type === 1 && (
-              <div className="flink-application-current">
-                {findCurrentLink(approveTarget)
-                  ? `现网信息：${findCurrentLink(approveTarget)!.name} · ${
-                      findCurrentLink(approveTarget)!.url
-                    } · ${findCurrentLink(approveTarget)!.description}`
-                  : "⚠️ 未找到对应的友链，应用修改可能会失败"}
-              </div>
-            )}
+            {approveTarget?.type === 1 &&
+              renderModifyDiff(approveTarget, false, approveForm)}
             <Label>加入分组</Label>
             <Dropdown
               value={approveForm.group || "请选择分组"}
@@ -1005,6 +1073,12 @@ export default function Flinks() {
                 </Option>
               ))}
             </Dropdown>
+            {approveTarget?.type === 1 && (
+              <div className="flink-approve-group-hint">
+                申请本身不改分组，默认保持在「{approveTarget.targetGroup || "原分组"}」；
+                在这里改选其它分组，通过时会把该友链移动过去。
+              </div>
+            )}
             <Label>站点名称</Label>
             <Input
               value={approveForm.name}
@@ -1030,6 +1104,7 @@ export default function Flinks() {
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input
                 type="color"
+                className="flink-color-input"
                 value={
                   /^#[0-9a-fA-F]{6}$/.test(approveForm.color)
                     ? approveForm.color
@@ -1038,7 +1113,6 @@ export default function Flinks() {
                 onChange={(e) =>
                   setApproveForm((p) => ({ ...p, color: e.target.value }))
                 }
-                style={{ width: 42, height: 32, padding: 2, cursor: "pointer" }}
               />
               <Input
                 value={approveForm.color}
@@ -1047,9 +1121,14 @@ export default function Flinks() {
               />
             </div>
             <Checkbox
-              checked={rehostAvatar}
+              checked={rehostAvatar && !isOwnHost(approveForm.avatar.trim())}
+              disabled={isOwnHost(approveForm.avatar.trim())}
               onChange={(_, d) => setRehostAvatar(!!d.checked)}
-              label="把头像转存到自有图床"
+              label={
+                isOwnHost(approveForm.avatar.trim())
+                  ? "头像已在自有图床，无需转存"
+                  : "把头像转存到自有图床"
+              }
             />
             <div style={{ fontSize: 12, opacity: 0.7 }}>
               {approveTarget?.email
@@ -1221,15 +1300,7 @@ export default function Flinks() {
                     ? ` · ${new Date(app.createdAt).toLocaleString("zh-CN")}`
                     : ""}
                 </div>
-                {app.type === 1 && (
-                  <div className="flink-application-current">
-                    {findCurrentLink(app)
-                      ? `现网信息：${findCurrentLink(app)!.name} · ${
-                          findCurrentLink(app)!.url
-                        } · ${findCurrentLink(app)!.description}`
-                      : "⚠️ 未找到对应的友链（可能已被删除或移动分组）"}
-                  </div>
-                )}
+                {app.type === 1 && renderModifyDiff(app, true)}
               </div>
               <div className="flink-application-actions">
                 <Button
@@ -1505,7 +1576,7 @@ export default function Flinks() {
                             <>
                               <input
                                 type="color"
-                                className="flink-item-color-box"
+                                className="flink-color-input flink-item-color-box"
                                 style={{
                                   backgroundColor: colorEditing.color,
                                 }}
