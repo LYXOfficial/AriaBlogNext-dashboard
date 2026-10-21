@@ -423,7 +423,8 @@ export default function Drafts(){
         <Label id="posts-pagination-text">{`20 条/页 共 ${postCount} 条`}</Label>
       </div>
       <BaseDialog {...dialogState}/>
-      <EditPostDialog {...editPostDialogState} updated={updated}/>
+      {/* 草稿没有正式文章的摘要缓存，在弹窗入口统一禁用，避免不同操作漏传。 */}
+      <EditPostDialog {...editPostDialogState} updated={updated} allowSummary={false}/>
       <Messages ref={messageBarRef}/>
     </>
   );

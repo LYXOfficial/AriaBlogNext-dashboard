@@ -440,7 +440,8 @@ export default function Edit() {
       </div>
       <Messages ref={messageBarRef} />
       <BaseDialog {...dialogState} />
-      <EditPostDialog {...editPostDialogState} />
+      {/* 共用编辑页只有正式文章可读取、生成摘要，草稿不展示摘要区块。 */}
+      <EditPostDialog {...editPostDialogState} allowSummary={type === "post"} />
     </>
   );
 }
