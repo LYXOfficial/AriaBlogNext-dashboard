@@ -59,6 +59,8 @@ export default function Edit() {
   const [updated, setUpdated] = useState(0);
   const [currentPostInfo, setCurrentPostInfo] = useState<Post>({});
   const [saving, setSaving] = useState(false);
+  // 有未保存的正文改动时，标题栏显示 * 提示
+  const [dirty, setDirty] = useState(false);
   const [saveAsing, setSaveAsing] = useState(false);
   const saveButtonRef = useRef<HTMLButtonElement>(null);
   const vditorRef = useRef<{ getMarkdown: () => string }>(null);
@@ -70,6 +72,7 @@ export default function Edit() {
             if (res) {
               r = res;
               setCurrentPostInfo(res);
+              setDirty(false);
             }
           })
         : 0;
@@ -79,6 +82,7 @@ export default function Edit() {
             if (res) {
               r = res;
               setCurrentPostInfo(res);
+              setDirty(false);
             }
           })
         : 0;
@@ -152,6 +156,7 @@ export default function Edit() {
                       lastUpdatedTime: newTime,
                     }));
                     success();
+                    setDirty(false);
                     setUpdated(updated + 1);
                   } else failed();
                 } else {
@@ -176,6 +181,7 @@ export default function Edit() {
                       lastUpdatedTime: newTime,
                     }));
                     success();
+                    setDirty(false);
                   } else failed();
                 } else {
                   failed();
@@ -351,7 +357,8 @@ export default function Edit() {
             <div id="editpost-main-topline">
               <Label id="editpost-main-title">{currentPostInfo.title}</Label>
               <Label id="editpost-main-slug">
-                {type == "post" ? "*已发布 " : "*草稿 "}
+                {dirty && "*"}
+                {type == "post" ? "已发布 " : "草稿 "}
                 {type == "post" ? (
                   <a
                     href={`${config.blogUrl}/posts/${currentPostInfo.slug}`}
@@ -436,7 +443,11 @@ export default function Edit() {
         ) : (
           <>加载中...</>
         )}
-        <Vditor content={currentPostInfo.mdContent} ref={vditorRef} />
+        <Vditor
+          content={currentPostInfo.mdContent}
+          onChange={() => setDirty(true)}
+          ref={vditorRef}
+        />
       </div>
       <Messages ref={messageBarRef} />
       <BaseDialog {...dialogState} />

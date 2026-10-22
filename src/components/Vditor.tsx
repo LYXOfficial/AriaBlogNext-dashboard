@@ -1,11 +1,22 @@
-import{ forwardRef,useEffect,useImperativeHandle,useState } from "react";
+import{ forwardRef,useEffect,useImperativeHandle,useRef,useState } from "react";
 import Vd from "vditor";
 import "vditor/dist/index.css";
 import "@/styles/vditor.scss";
 import { uploadImage } from "@/utils/image";
 import stringRandom from "string-random";
-const Vditor=forwardRef(({ content }:{ content:string|undefined },ref)=>{
+const Vditor=forwardRef(({ content, onChange }:{ content:string|undefined; onChange?:()=>void },ref)=>{
   const [vd,setVd]=useState<Vd>();
+  const onChangeRef=useRef(onChange);
+  // 程序化写入（载入文章、保存后刷新）不应被当成用户编辑
+  const silent=useRef(false);
+  const setValueSilently=(vditor:Vd,value:string)=>{
+    silent.current=true;
+    vditor.setValue(value);
+    silent.current=false;
+  };
+  useEffect(()=>{
+    onChangeRef.current=onChange;
+  },[onChange]);
   useImperativeHandle(ref,()=>({
     getMarkdown:()=>vd?.getValue(),
   }));
@@ -24,8 +35,11 @@ const Vditor=forwardRef(({ content }:{ content:string|undefined },ref)=>{
     let vditor:Vd;
     const initVditor=()=>{
       vditor=new Vd("vditor",{
+        input:()=>{
+          if(!silent.current) onChangeRef.current?.();
+        },
         after:()=>{
-          vditor.setValue(content??"");
+          setValueSilently(vditor,content??"");
           setVd(vditor);
         },
         outline:{
@@ -70,7 +84,7 @@ const Vditor=forwardRef(({ content }:{ content:string|undefined },ref)=>{
 
   useEffect(()=>{
     if(vd){
-      vd.setValue(content??"");
+      setValueSilently(vd,content??"");
     }
   },[content,vd]);
 
