@@ -1294,6 +1294,27 @@ export default function Flinks() {
                   </a>
                 </div>
                 <div className="flink-application-descr">{app.descr}</div>
+                {app.aiScreening && (
+                  <div className="flink-screening">
+                    {app.aiScreening.verdict === "pass" ? (
+                      <span className="flink-screening-tag pass">AI 初筛通过</span>
+                    ) : (
+                      <span className="flink-screening-tag review">疑似违规 · 建议进一步核实</span>
+                    )}
+                    <span
+                      className={`flink-screening-tag backlink${
+                        app.aiScreening.backlink === "found" ? " found" : ""
+                      }`}
+                    >
+                      {app.aiScreening.backlink === "found" ? "已添加回链" : "未见回链"}
+                    </span>
+                    <span className="flink-screening-text">
+                      {app.aiScreening.verdict === "pass"
+                        ? app.aiScreening.summary
+                        : app.aiScreening.reason || "初筛存疑，请打开链接人工核实"}
+                    </span>
+                  </div>
+                )}
                 <div className="flink-application-meta">
                   {app.email || "未填写邮箱"}
                   {app.createdAt
