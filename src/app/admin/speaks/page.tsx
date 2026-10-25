@@ -11,16 +11,24 @@ import Messages, { MessagesRef } from "@/components/Messages";
 import { BaseDialog, BaseDialogProps } from "@/components/Dialog";
 import { BB } from "@/interfaces/bb";
 import AceEditor from 'react-ace';
-import mime from "mime";
+// 静态引入 mode/theme：要在编辑器挂载前注册好，Ace 才不会尝试动态加载
+// （动态加载推断不出 basePath，会报 "Unable to infer path to ace" 警告）
+import 'ace-builds/src-noconflict/mode-html';
+import 'ace-builds/src-noconflict/theme-xcode';
+import 'ace-builds/src-noconflict/theme-one_dark';
+import 'ace-builds/src-noconflict/ext-language_tools';
 import { uploadImage } from "@/utils/image";
 import React from "react";
 const imageTypes=["image/png","image/jpeg","image/gif","image/webp","image/jpg"];
-function BBItem({item,deleteHandler,saveHandler,pasteHandler,uploadWithTip,updated}:{item:BB,deleteHandler:()=>void,saveHandler:(content:string)=>void,pasteHandler:(editorRef:RefObject<AceEditor>,event:ClipboardEvent)=>void,uploadWithTip:(file:File)=>Promise<string>,updated:number}):ReactElement{
+function BBItem({item,deleteHandler,saveHandler,pasteHandler,dropHandler,uploadWithTip,updated}:{item:BB,deleteHandler:()=>void,saveHandler:(content:string)=>void,pasteHandler:(editorRef:RefObject<AceEditor>,event:ClipboardEvent)=>void,dropHandler:(editorRef:RefObject<AceEditor>,event:DragEvent)=>void,uploadWithTip:(file:File)=>Promise<string>,updated:number}):ReactElement{
   const [editing,setEditing]=useState(false);
   const [saveEnable,setSaveEnable]=useState(false);
   const aceEditorRef=useRef<AceEditor>(null);
   const saveButtonRef=useRef<HTMLButtonElement>(null);
   const handlePaste=(e:ClipboardEvent)=>{pasteHandler(aceEditorRef,e)};
+  const handleDrop=(e:DragEvent)=>{dropHandler(aceEditorRef,e)};
+  // dragover 不 preventDefault 的话浏览器会把文件当页面打开；只拦文件类拖拽
+  const handleDragOver=(e:DragEvent)=>{if(e.dataTransfer?.types?.includes("Files"))e.preventDefault()};
   const uploadImageInputRef=useRef<HTMLInputElement>(null);
   const [isLight,setIsLight]=useState(true);
   useEffect(()=>{
@@ -32,6 +40,8 @@ function BBItem({item,deleteHandler,saveHandler,pasteHandler,uploadWithTip,updat
     setIsLight(mediaQuery.matches);
     return ()=>{
       aceEditorRef.current?.editor?.container.removeEventListener("paste",handlePaste);
+      aceEditorRef.current?.editor?.container.removeEventListener("drop",handleDrop);
+      aceEditorRef.current?.editor?.container.removeEventListener("dragover",handleDragOver);
       mediaQuery.removeEventListener("change",handleChange);
     }
   },[]);
@@ -207,6 +217,8 @@ function BBItem({item,deleteHandler,saveHandler,pasteHandler,uploadWithTip,updat
             },
           });
           editor.container.addEventListener("paste",handlePaste);
+          editor.container.addEventListener("drop",handleDrop);
+          editor.container.addEventListener("dragover",handleDragOver);
         }}
         setOptions={
           {
@@ -228,12 +240,14 @@ function BBItem({item,deleteHandler,saveHandler,pasteHandler,uploadWithTip,updat
     </div>
   );
 }
-function NewBBItem({item,saveHandler,pasteHandler,uploadWithTip}:{item:BB,saveHandler:(content:string)=>void,pasteHandler:(editorRef:RefObject<AceEditor>,event:ClipboardEvent)=>void,uploadWithTip:(file:File)=>Promise<string>}){
+function NewBBItem({item,saveHandler,pasteHandler,dropHandler,uploadWithTip}:{item:BB,saveHandler:(content:string)=>void,pasteHandler:(editorRef:RefObject<AceEditor>,event:ClipboardEvent)=>void,dropHandler:(editorRef:RefObject<AceEditor>,event:DragEvent)=>void,uploadWithTip:(file:File)=>Promise<string>}){
   const [editing,setEditing]=useState(true);
   const [saveEnable,setSaveEnable]=useState(false);
   const aceEditorRef=useRef<AceEditor>(null);
   const saveButtonRef=useRef<HTMLButtonElement>(null);
   const handlePaste=(e:ClipboardEvent)=>{pasteHandler(aceEditorRef,e)};
+  const handleDrop=(e:DragEvent)=>{dropHandler(aceEditorRef,e)};
+  const handleDragOver=(e:DragEvent)=>{if(e.dataTransfer?.types?.includes("Files"))e.preventDefault()};
   const uploadImageInputRef=useRef<HTMLInputElement>(null);
   const [isLight,setIsLight]=useState(true);
   useEffect(()=>{
@@ -247,6 +261,8 @@ function NewBBItem({item,saveHandler,pasteHandler,uploadWithTip}:{item:BB,saveHa
     return ()=>{
       mediaQuery.removeEventListener("change",handleChange);
       aceEditorRef.current?.editor?.container.removeEventListener("paste",handlePaste);
+      aceEditorRef.current?.editor?.container.removeEventListener("drop",handleDrop);
+      aceEditorRef.current?.editor?.container.removeEventListener("dragover",handleDragOver);
     }
   },[]);
   return (editing?
@@ -399,6 +415,8 @@ function NewBBItem({item,saveHandler,pasteHandler,uploadWithTip}:{item:BB,saveHa
             },
           });
           editor.container.addEventListener("paste",handlePaste);
+          editor.container.addEventListener("drop",handleDrop);
+          editor.container.addEventListener("dragover",handleDragOver);
         }}
         setOptions={
           {
@@ -437,47 +455,54 @@ export default function Page(){
     }
     return "";
   }
+  // 粘贴/拖入共用的图片上传：成功后往光标处插 <img>
+  const insertUploadedImage=async (editorRef:RefObject<AceEditor>,file:File)=>{
+    const ur=await uploadWithTip(file);
+    if(ur) editorRef.current?.editor.insert(`<img src="${ur}"></img>`);
+  }
+  // 粘贴一律读事件自带的 clipboardData（同步、无权限门槛）。原实现先
+  // preventDefault 再调 navigator.clipboard.read()，那个 API 在未授权剪贴板
+  // 读取或页面失焦时会直接 reject 且没有 catch，表现为"粘贴图片没反应"，
+  // 这就是之前上传失败的根因，别改回去。
   const pasteHandler=async (editorRef:RefObject<AceEditor>,event:ClipboardEvent)=>{
+    const dt=event.clipboardData;
+    if(!dt) return;
+    const fileItem=Array.from(dt.items??[]).find(item=>item.kind==="file"&&imageTypes.includes(item.type));
+    if(fileItem){
+      event.preventDefault();
+      const file=fileItem.getAsFile();
+      if(file) await insertUploadedImage(editorRef,file);
+      return;
+    }
+    const text=dt.getData("text/plain");
+    if(!text) return;
     event.preventDefault();
-    navigator.clipboard.read().then(async (res)=>{
-      const currentType=imageTypes.find(type=>res[0].types.includes(type))
-      console.log(res[0].types)
-      if(currentType){
-        const file=new File([await res[0].getType(currentType)],`file.${mime.getExtension(currentType)}`);
-        const ur=await uploadWithTip(file);
-        if(ur) editorRef.current?.editor.insert(`<img src="${ur}"></img>`);
-      }
-      else if(res[0].types.includes("text/plain")){
-        const text=await (await res[0].getType("text/plain")).text();
-        if(((text.startsWith("https://")||text.startsWith("http://"))&&!text.startsWith("https://img.0v0.my"))){
-          if((text.endsWith(".jpg")||text.endsWith(".png")||text.endsWith(".jpeg")||text.endsWith(".gif")||text.endsWith(".webp"))){
-            const tr=await fetch(text);
-            messageBarRef.current?.addMessage("提示","尝试读取图片...","info");
-            if(tr.ok){
-              const file=new File([await tr.blob()],`file.${text.split(".")[text.split(".").length-1]}`);
-              messageBarRef.current?.addMessage("提示","图片上传中... 坐和放宽","info");
-              const ur=await uploadImage(file);
-              if(ur){
-                editorRef.current?.editor.insert(`<img src="${ur}"></img>`);
-                messageBarRef.current?.addMessage("提示","上传成功","success");
-              }
-              else{
-                messageBarRef.current?.addMessage("提示","上传失败","error");
-              }
-            }
-            else{
-              editorRef.current?.editor.insert(`<a href="${text}">链接</a>`);
-            }
-          }
-          else{
-            editorRef.current?.editor.insert(`<a href="${text}">链接</a>`);
-          }
+    if(((text.startsWith("https://")||text.startsWith("http://"))&&!text.startsWith("https://img.0v0.my"))){
+      if((text.endsWith(".jpg")||text.endsWith(".png")||text.endsWith(".jpeg")||text.endsWith(".gif")||text.endsWith(".webp"))){
+        messageBarRef.current?.addMessage("提示","尝试读取图片...","info");
+        const tr=await fetch(text);
+        if(tr.ok){
+          const file=new File([await tr.blob()],`file.${text.split(".")[text.split(".").length-1]}`);
+          await insertUploadedImage(editorRef,file);
         }
         else{
-          editorRef.current?.editor.insert(text);
+          editorRef.current?.editor.insert(`<a href="${text}">链接</a>`);
         }
       }
-    });
+      else{
+        editorRef.current?.editor.insert(`<a href="${text}">链接</a>`);
+      }
+    }
+    else{
+      editorRef.current?.editor.insert(text);
+    }
+  }
+  // 拖入图片上传：只拦图片文件，文本拖拽等保留 Ace 原生行为
+  const dropHandler=async (editorRef:RefObject<AceEditor>,event:DragEvent)=>{
+    const file=event.dataTransfer?.files?.[0];
+    if(!file||!imageTypes.includes(file.type)) return;
+    event.preventDefault();
+    await insertUploadedImage(editorRef,file);
   }
   const [dialogState,setDialogState]=useState<BaseDialogProps>({
     title:"",
@@ -486,12 +511,7 @@ export default function Page(){
     onClose:()=>{},
     open:false,
   });
-  useEffect(()=>{
-    import('ace-builds/src-noconflict/mode-html');
-    import('ace-builds/src-noconflict/theme-xcode');
-    import('ace-builds/src-noconflict/theme-one_dark');
-    import('ace-builds/src-noconflict/ext-language_tools');
-  },[]);
+  // mode/theme 已改为顶部静态 import（见文件头注释），这里不再需要
   useEffect(()=>{(async ()=>{
     setSpeakCount(await getSpeakCount());
     const speaks=await getSpeaks((page-1)*30,page*30);
@@ -530,7 +550,7 @@ export default function Page(){
             messageBarRef.current?.addMessage("提示","保存失败","error");
           }
         }
-        return <BBItem key={item.time} item={item} deleteHandler={deleteHandler} saveHandler={saveHandler} pasteHandler={pasteHandler} uploadWithTip={uploadWithTip} updated={updated}/>;
+        return <BBItem key={item.time} item={item} deleteHandler={deleteHandler} saveHandler={saveHandler} pasteHandler={pasteHandler} dropHandler={dropHandler} uploadWithTip={uploadWithTip} updated={updated}/>;
       }));
     }
     const resizeHandler=()=>{
@@ -565,7 +585,7 @@ export default function Page(){
                 messageBarRef.current?.addMessage("提示","保存失败","error");
               }
             }
-            setBBContent([<NewBBItem saveHandler={saveHandler} item={item} pasteHandler={pasteHandler} uploadWithTip={uploadWithTip}/>,...bbContent])
+            setBBContent([<NewBBItem key={`new-${item.time}`} saveHandler={saveHandler} item={item} pasteHandler={pasteHandler} dropHandler={dropHandler} uploadWithTip={uploadWithTip}/>,...bbContent])
           }}
         >
           新说说

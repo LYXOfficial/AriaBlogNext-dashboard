@@ -4,9 +4,10 @@ import "@/styles/images.scss";
 import {
   ArrowClockwiseRegular,
   ArrowExitRegular,
-  DocumentArrowUpRegular,
   ClipboardLinkRegular,
+  ClipboardPasteRegular,
   DeleteRegular,
+  DocumentArrowUpRegular,
   MultiselectLtrRegular,
   CopyRegular,
   ArrowUploadRegular,
@@ -304,6 +305,41 @@ export default function Page() {
               onClick={() => uploadImageInputRef.current?.click()}
             >
               上传图片
+            </Button>
+            <Button
+              icon={<ClipboardPasteRegular />}
+              appearance="secondary"
+              onClick={async () => {
+                // 点击是用户手势，clipboard.read() 会正常走授权弹窗；
+                // 被拒绝/非安全上下文时 reject，给出中文提示而不是静默失败
+                try {
+                  const items = await navigator.clipboard.read();
+                  const files: File[] = [];
+                  for (const item of items) {
+                    const type = imageTypes.find((t) => item.types.includes(t));
+                    if (type) {
+                      const blob = await item.getType(type);
+                      const ext = type === "image/jpeg" ? "jpg" : type.split("/")[1];
+                      files.push(
+                        new File([blob], `clipboard-${Date.now()}.${ext}`, { type }),
+                      );
+                    }
+                  }
+                  if (files.length > 0) {
+                    await handleUploadFiles(files);
+                  } else {
+                    messageBarRef.current?.addMessage("提示", "剪贴板里没有图片", "info");
+                  }
+                } catch {
+                  messageBarRef.current?.addMessage(
+                    "错误",
+                    "读取剪贴板失败（浏览器未授权或页面不是 HTTPS）",
+                    "error",
+                  );
+                }
+              }}
+            >
+              从剪贴板上传
             </Button>
             <Button
               icon={<ArrowClockwiseRegular />}
