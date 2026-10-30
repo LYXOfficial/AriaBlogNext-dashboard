@@ -1,5 +1,5 @@
 "use client";
-import { config } from "@/dashboardConfig";
+import { countDraftsByTitle, listDraftsByTitle } from "@/utils/posts";
 import { useEffect,useState,useRef } from "react";
 import "@/styles/posts.scss";
 import { useSearchParams } from "next/navigation";
@@ -98,11 +98,13 @@ export default function Drafts(){
   const rows=sort(getRows());
   useEffect(()=>{
     (async ()=>{
-      const postCountRes=await fetch(`${config.backEndUrl}/get/draft/searchDraftsByTitleCount?title=${query}`,{headers:{"Authorization":`Bearer ${localStorage.getItem('token')}`}});
-      if(postCountRes.ok) setPostCount((await postCountRes.json()).count);
-      const startl=(page-1)*20,endl=page*20;
-      const postsRes=await fetch(`${config.backEndUrl}/get/draft/searchDraftsByTitle?startl=${startl}&endl=${endl}&title=${query}`,{headers:{"Authorization":`Bearer ${localStorage.getItem('token')}`}});
-      if(postsRes.ok) setPosts((await postsRes.json()).data);
+      // 旧 searchDraftsByTitle(+Count) 合并为 drafts/list + keyword
+      const [countRes,postsRes]=await Promise.all([
+        countDraftsByTitle(query),
+        listDraftsByTitle(query,page),
+      ]);
+      if(countRes.ok) setPostCount(countRes.data);
+      if(postsRes.ok) setPosts(postsRes.data ?? []);
     })();
   },[page,updated,query]);
   return (

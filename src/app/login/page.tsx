@@ -3,8 +3,7 @@ import { Button, Input, Label } from "@fluentui/react-components";
 import "@/styles/login.scss";
 import { useRef, useState, useEffect } from "react";
 import { useRouter } from "nextjs-toploader/app";
-import { config } from "@/dashboardConfig";
-import verifyToken from "@/utils/access";
+import { login, verifyToken } from "@/utils/access";
 import Messages, { MessagesRef } from "@/components/Messages";
 import NoSSR from "@/components/NoSSR";
 import React from "react";
@@ -17,12 +16,13 @@ export default function Page() {
   const [logining, setLogining] = useState(false);
   const router = useRouter();
   useEffect(() => {
-    (async () => {
-      const keydownHandler = (e: KeyboardEvent) => {
-        if (e.key === "Enter") submitRef.current?.click();
-      };
-      document.addEventListener("keydown", keydownHandler);
-      verifyToken(localStorage.getItem("token")).then((res) => {
+    // 清理函数必须直接返回给 useEffect；写在 async IIFE 里 React 不会执行（监听器泄漏）
+    const keydownHandler = (e: KeyboardEvent) => {
+      if (e.key === "Enter") submitRef.current?.click();
+    };
+    document.addEventListener("keydown", keydownHandler);
+    verifyToken(localStorage.getItem("token"))
+      .then((res) => {
         if (res) {
           messageBarRef.current?.addMessage(
             "提示",
@@ -33,9 +33,9 @@ export default function Page() {
             router.push("/admin/overview");
           }, 1000);
         }
-      });
-      return () => document.removeEventListener("keydown", keydownHandler);
-    })();
+      })
+      .catch(() => {});
+    return () => document.removeEventListener("keydown", keydownHandler);
   }, []);
   return (
     <>
@@ -74,23 +74,13 @@ export default function Page() {
                   );
                 } else {
                   setLogining(true);
-                  const res = await fetch(
-                    `${config.backEndUrl}/access/user/login`,
-                    {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify({
-                        user: userRef.current!.value,
-                        password: pwdRef.current!.value,
-                      }),
-                    }
-                  );
-                  if (res.ok) {
-                    const data = await res.json();
-                    if (data.message === "success") {
-                      localStorage.setItem("token", data.jwt);
+                  try {
+                    const res = await login(
+                      userRef.current!.value,
+                      pwdRef.current!.value,
+                    );
+                    if (res.ok && res.data?.token) {
+                      localStorage.setItem("token", res.data.token);
                       messageBarRef.current?.addMessage(
                         "消息",
                         "登录成功！跳转中...",
@@ -98,22 +88,24 @@ export default function Page() {
                       );
                       setTimeout(() => router.push("/admin/overview"), 2000);
                     } else {
+                      // 403：错误密码与锁定同文案（后端不暴露锁定状态）。
+                      // 失败时保留原来的“坐和放宽”彩蛋，别把梗删了。
+                      if (!res.ok && res.status === 403) {
+                        messageBarRef.current?.addMessage(
+                          "错误",
+                          "登录失败，用户名或密码错误",
+                          "error"
+                        );
+                      }
                       messageBarRef.current?.addMessage(
-                        "错误",
-                        "登录失败，用户名或密码错误",
+                        "内部错误",
+                        "保持与您的 Internet 管理员联系，坐和放宽。\n这不是你的错，是我们的错。",
                         "error"
                       );
                       setLogining(false);
                     }
-                  } else {
-                    if (res.status == 403) {
-                      messageBarRef.current?.addMessage(
-                        "错误",
-                        "登录失败，用户名或密码错误",
-                        "error"
-                      );
-                      setLogining(false);
-                    }
+                  } catch {
+                    // 网络异常也走同一个彩蛋；以前这里会直接抛未处理异常
                     messageBarRef.current?.addMessage(
                       "内部错误",
                       "保持与您的 Internet 管理员联系，坐和放宽。\n这不是你的错，是我们的错。",

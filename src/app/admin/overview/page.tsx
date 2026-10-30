@@ -1,9 +1,11 @@
 "use client";
-import { config } from "@/dashboardConfig";
+import { getPostCount, getCategoryCount, getTagCount, getDraftCount } from "@/utils/posts";
+import { getSpeakCount } from "@/utils/speaks";
+import { getFlinkCount } from "@/utils/flinks";
 import { useEffect, useState } from "react";
 import "@/styles/overview.scss";
-import { 
-  Document24Regular, 
+import {
+  Document24Regular,
   Folder24Regular,
   Tag24Regular,
   Comment24Regular,
@@ -21,49 +23,14 @@ export default function Overview(){
   const [flinkCount,setFlinkCount]=useState<number>(-1);
   const [commentCount,setCommentCount]=useState<number>(-1);
   const [draftCount,setDraftCount]=useState<number>(-1);
-  const [lastUpdate,setLastUpdate]=useState<number>(-1);
   useEffect(()=>{(async ()=>{
-    fetch(`${config.backEndUrl}/get/post/postCount`)
-      .then(async res=>{
-        if(res.ok){
-          setPostCount((await res.json()).count);
-        }
-      });
-    fetch(`${config.backEndUrl}/get/category/categoryCount`)
-      .then(async res=>{
-        if(res.ok){
-          setCategoryCount((await res.json()).count);
-        }
-      })
-    fetch(`${config.backEndUrl}/get/tag/tagCount`)
-      .then(async res=>{
-        if(res.ok){
-          setTagCount((await res.json()).count);
-        }
-      })
-    fetch(`${config.backEndUrl}/get/draft/draftCount`,{headers:{'Authorization':`Bearer ${localStorage.getItem('token')}`}})
-      .then(async res=>{
-        if(res.ok){
-          setDraftCount((await res.json()).count);
-        }
-      })
-    fetch(`${config.backEndUrl}/get/speaks/speaksCount`)
-      .then(async res=>{
-        if(res.ok){
-          setSpeaksCount((await res.json()).count);
-        }
-      })
-    fetch(`${config.backEndUrl}/get/flink/flinkCount`)
-      .then(async res=>{
-        if(res.ok){
-          setFlinkCount((await res.json()).count);
-        }
-      })
-    fetch(`${config.backEndUrl}/get/siteInfo/lastUpdateTime`)
-      .then(async res=>{
-        if(res.ok)
-          setLastUpdate((await res.json()).time);
-      })
+    // 计数统一走 utils 里的封装（数量都在 list?countOnly=true 的 meta.count）
+    getPostCount().then(r=>{ if(r.ok) setPostCount(r.data); });
+    getCategoryCount().then(r=>{ if(r.ok) setCategoryCount(r.data); });
+    getTagCount().then(r=>{ if(r.ok) setTagCount(r.data); });
+    getDraftCount().then(r=>{ if(r.ok) setDraftCount(r.data); });
+    getSpeakCount().then(setSpeaksCount); // 这个封装直接返回数量
+    getFlinkCount().then(r=>{ if(r.ok) setFlinkCount(r.data); });
   })()},[]);
   return (
     <>

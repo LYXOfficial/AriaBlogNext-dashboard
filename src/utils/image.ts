@@ -1,4 +1,4 @@
-import { config } from "@/dashboardConfig";
+import { api, qs } from "@/utils/api";
 
 export async function convertToWebp(file: File): Promise<File> {
   const imageTypes = ["image/jpeg", "image/png", "image/bmp", "image/jpg"];
@@ -36,38 +36,21 @@ export async function convertToWebp(file: File): Promise<File> {
 }
 
 
-export async function uploadImage(file: File):Promise<string>{
-  try{
-    file=await convertToWebp(file);
-    const formData=new FormData();
-    formData.append("file",file);
-    const res=await fetch(`${config.backEndUrl}/update/image/uploadImage`,{
-      method:"POST",
-      headers:{
-        "Accept":"application/json",
-        "Authorization":"Bearer "+(localStorage.getItem("token")??"")
-      },
-      body:formData,
-    });
-    if(res.ok){
-      return (await res.json()).data.data.links.url;
+export async function uploadImage(file: File): Promise<string> {
+  try {
+    file = await convertToWebp(file);
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await api<{ url: string }>("POST", "/images/upload", { auth: true, form: formData });
+    if (res.ok) {
+      return res.data?.url ?? "";
     }
-  }
-  catch(e){}
+  } catch (e) {}
   return "";
 }
 export async function deleteImage(url: string): Promise<boolean> {
   try {
-    const res = await fetch(
-      `${config.backEndUrl}/update/image/deleteImage?url=${encodeURIComponent(url)}`,
-      {
-        method: "DELETE",
-        headers: {
-          "Accept": "application/json",
-          "Authorization": "Bearer " + (localStorage.getItem("token") ?? "")
-        }
-      }
-    );
+    const res = await api("DELETE", `/images/delete${qs({ url })}`, { auth: true });
     if (res.ok) {
       return true;
     }
@@ -76,15 +59,9 @@ export async function deleteImage(url: string): Promise<boolean> {
 }
 export async function listImages(): Promise<string[]> {
   try {
-    const res = await fetch(`${config.backEndUrl}/update/image/listImages`, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": "Bearer " + (localStorage.getItem("token") ?? "")
-      }
-    });
+    const res = await api<{ images: string[] }>("GET", "/images/list", { auth: true });
     if (res.ok) {
-      return (await res.json()).data.images;
+      return res.data?.images ?? [];
     }
   } catch (e) {}
   return [];
@@ -127,16 +104,9 @@ export async function reuploadImage(oldUrl: string, file: File): Promise<string>
     formData.append("file", uploadFile);
     formData.append("url", oldUrl);
 
-    const res = await fetch(`${config.backEndUrl}/update/image/reuploadImage`, {
-      method: "PUT",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": "Bearer " + (localStorage.getItem("token") ?? ""),
-      },
-      body: formData,
-    });
+    const res = await api<{ url: string }>("PUT", "/images/reupload", { auth: true, form: formData });
     if (res.ok) {
-      return (await res.json()).data.data.links.url;
+      return res.data?.url ?? "";
     }
   } catch (e) {}
   return "";
@@ -147,20 +117,9 @@ export async function reuploadImage(oldUrl: string, file: File): Promise<string>
  */
 export async function rehostImageByUrl(url: string): Promise<string> {
   try {
-    const res = await fetch(
-      `${config.backEndUrl}/update/image/rehostImageByUrl`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + (localStorage.getItem("token") ?? ""),
-        },
-        body: JSON.stringify({ url }),
-      }
-    );
-    if (!res.ok) return "";
-    const data = await res.json();
-    return (data?.data?.url as string) ?? "";
+    const res = await api<{ url: string }>("POST", "/images/import", { auth: true, body: { url } });
+    if (res.ok) return res.data?.url ?? "";
+    return "";
   } catch {
     return "";
   }

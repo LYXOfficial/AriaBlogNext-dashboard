@@ -16,11 +16,10 @@ import {
 } from "@fluentui/react-components";
 import { Post } from "@/interfaces/post";
 import { ChangeEvent, FC, ReactElement, useEffect, useRef, useState } from "react";
-import { getCategories, getTags } from "@/utils/posts";
+import { getCategories, getTags, getCachedPostSummary, regeneratePostSummary } from "@/utils/posts";
 import { ArrowUploadRegular, Dismiss12Regular, ArrowSyncRegular } from "@fluentui/react-icons";
 import { uploadImage } from "@/utils/image";
 import mime from "mime";
-import { config } from "@/dashboardConfig";
 
 export declare interface BaseDialogProps{
   title:string,
@@ -90,13 +89,9 @@ export const EditPostDialog=(
     let alive=true;
     (async ()=>{
       try{
-        const res=await fetch(
-          `${config.backEndUrl}/update/post/summary?slug=${encodeURIComponent(post.slug ?? "")}`,
-          {headers:{"Authorization":"Bearer "+(localStorage.getItem("token")??"")}}
-        );
+        const res=await getCachedPostSummary(post.slug ?? "");
         if(!res.ok) return;
-        const data=await res.json();
-        if(alive&&typeof data.data==="string") setCurrentSummary(data.data);
+        if(alive&&typeof res.data?.summary==="string") setCurrentSummary(res.data.summary);
       }catch{}
     })();
     return ()=>{alive=false;};
@@ -108,25 +103,18 @@ export const EditPostDialog=(
     setSummaryError(false);
     setSummaryHint("正在重新生成，长文章可能要 1–3 分钟，请勿关闭弹窗…");
     try{
-      const res=await fetch(`${config.backEndUrl}/update/post/refreshSummary`,{
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "Authorization":"Bearer "+(localStorage.getItem("token")??"")
-        },
-        body:JSON.stringify({slug:currentPostInfo.slug})
-      });
-      const data=await res.json().catch(()=>({}));
-      if(res.ok&&typeof data.data==="string"){
-        setSummaryText(data.data);
-        setCurrentSummary(data.data);
+      const res=await regeneratePostSummary(currentPostInfo.slug ?? "");
+      if(res.ok&&typeof res.data?.summary==="string"){
+        setSummaryText(res.data.summary);
+        setCurrentSummary(res.data.summary);
         setSummaryHint("已重新生成并写入缓存，博客端下次打开文章即可看到。");
       }else{
         setSummaryError(true);
         setSummaryHint(
-          res.status===401? "登录状态已失效，请重新登录后再试。"
+          res.ok? "生成失败，请稍后再试。"
+          : res.status===401? "登录状态已失效，请重新登录后再试。"
           : res.status===404? "找不到这篇文章（slug 可能已变更）。"
-          : (data.detail?.error||data.detail||"生成失败，请稍后再试。")
+          : (res.message||"生成失败，请稍后再试。")
         );
       }
     }catch{

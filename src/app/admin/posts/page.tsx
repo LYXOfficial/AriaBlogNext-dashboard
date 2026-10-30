@@ -1,5 +1,5 @@
 "use client";
-import { config } from "@/dashboardConfig";
+import { countPostsByTitle, listPostsByTitle } from "@/utils/posts";
 import { useEffect,useState,useRef } from "react";
 import "@/styles/posts.scss";
 import { useSearchParams } from "next/navigation";
@@ -98,11 +98,13 @@ export default function Posts(){
   const rows=sort(getRows());
   useEffect(()=>{
     (async ()=>{
-      const postCountRes=await fetch(`${config.backEndUrl}/get/post/searchPostsByTitleCount?title=${query}`);
-      if(postCountRes.ok) setPostCount((await postCountRes.json()).count);
-      const startl=(page-1)*20,endl=page*20;
-      const postsRes=await fetch(`${config.backEndUrl}/get/post/searchPostsByTitle?startl=${startl}&endl=${endl}&title=${query}`);
-      if(postsRes.ok) setPosts((await postsRes.json()).data);
+      // 旧 searchPostsByTitle(+Count) 合并为 posts/list + titleOnly/keyword
+      const [countRes,postsRes]=await Promise.all([
+        countPostsByTitle(query),
+        listPostsByTitle(query,page),
+      ]);
+      if(countRes.ok) setPostCount(countRes.data);
+      if(postsRes.ok) setPosts(postsRes.data ?? []);
     })();
   },[page,updated,query]);
   return (
@@ -123,31 +125,9 @@ export default function Posts(){
           <Label size="large">{postCount==-1?"...":postCount} 篇文章</Label>
         </div>
         <div id="posts-topbar-actions">
-          {/* <Button 
-            appearance="secondary" 
-            icon={<ArrowSync16Filled/>}
-            onClick={
-              ()=>{
-                setDialogState({
-                  title:"重置缓存",
-                  content:"将强制刷新博客文章索引的缓存，在文章更新后首页显示异常时可以尝试，刷新后首次访问博客将会变慢",
-                  open:true,
-                  onConfirm:()=>{
-                    setDialogState({...dialogState,open:false});
-                    refreshPostsCache().then(()=>{
-                      messageBarRef.current?.addMessage("提示","文章缓存刷新成功","success");
-                    });
-                  },
-                  onClose:()=>{
-                    setDialogState({...dialogState,open:false});
-                  }
-                })
-              }
-            }
-          >刷新缓存</Button> */}
           <Button appearance="secondary" icon={<ArrowSync16Filled/>} onClick={()=>{setPosts([]);setUpdated(updated+1);}}>刷新列表</Button>
-          <Button 
-            appearance="primary" 
+          <Button
+            appearance="primary"
             icon={<Add16Filled/>}
             onClick={()=>{
               setEditPostDialogState({
@@ -215,8 +195,8 @@ export default function Posts(){
               <TableRow key={post.slug}>
                 <TableCell>
                   <TableCellLayout>
-                    <Link 
-                      href={`/admin/posts/edit?slug=${post.slug}&type=post`} 
+                    <Link
+                      href={`/admin/posts/edit?slug=${post.slug}&type=post`}
                       className="posts-list-item-title"
                       dangerouslySetInnerHTML={{
                           __html: post.title!.replace(eval(`/${query}/gi`),
@@ -241,9 +221,9 @@ export default function Posts(){
                 </TableCell>
                 <TableCell>
                   <TableCellLayout>
-                  <Button 
-                      size="small" 
-                      icon={<MarkdownRegular/>} 
+                  <Button
+                      size="small"
+                      icon={<MarkdownRegular/>}
                       title="进入编辑页"
                       onClick={
                         ()=>{
@@ -251,9 +231,9 @@ export default function Posts(){
                         }
                       }
                     />
-                    <Button 
-                      size="small" 
-                      icon={<ComposeRegular/>} 
+                    <Button
+                      size="small"
+                      icon={<ComposeRegular/>}
                       title="修改文章属性"
                       onClick={
                         ()=>{
@@ -285,7 +265,7 @@ export default function Posts(){
                         }
                       }
                     />
-                    <Button 
+                    <Button
                       size="small"
                       icon={<ArchiveRegular/>}
                       title="移至草稿箱"
@@ -364,11 +344,11 @@ export default function Posts(){
                         })
                       }}
                     />
-                    <Button 
-                      size="small" 
-                      icon={<DeleteRegular/>} 
-                      title="删除文章" 
-                      color="danger" 
+                    <Button
+                      size="small"
+                      icon={<DeleteRegular/>}
+                      title="删除文章"
+                      color="danger"
                       style={{color:"red"}}
                       onClick={()=>{
                         setDialogState({
