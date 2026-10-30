@@ -314,7 +314,7 @@ export default function Drafts(){
                                       ...dialogState,
                                       open:false
                                     });
-                                    if(await updatePostInfo(post)){
+                                    if(await updatePostInfo({...post, lastUpdatedTime: moment().unix()})){
                                       if(await updatePostMarkdown(mdContent!,post.slug!)){
                                         if(await removeDraft(post.slug!)){
                                           success();

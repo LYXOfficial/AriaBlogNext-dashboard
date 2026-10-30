@@ -56,36 +56,35 @@ export default function Edit() {
       onClose: () => {},
       open: false,
     });
-  const [updated, setUpdated] = useState(0);
   const [currentPostInfo, setCurrentPostInfo] = useState<Post>({});
+  // currentPostInfo 属于哪一篇。只有两者都对上，才把正文交给编辑器，
+  // 否则切换文章的同一帧里编辑器会先拿到上一篇的内容并被当成「已载入」。
+  const [loadedKey, setLoadedKey] = useState("");
   const [saving, setSaving] = useState(false);
   // 有未保存的正文改动时，标题栏显示 * 提示
   const [dirty, setDirty] = useState(false);
   const [saveAsing, setSaveAsing] = useState(false);
   const saveButtonRef = useRef<HTMLButtonElement>(null);
   const vditorRef = useRef<{ getMarkdown: () => string }>(null);
+  // 当前编辑器里是哪一篇。切换文章/类型时编辑器整体重建，不靠 props 覆写内容
+  const docKey = `${type ?? ""}:${slug ?? ""}`;
+  const loaded = loadedKey === docKey;
+  // 请求回来时用来确认还停在原来那篇，避免把上一篇的 meta 写进刚切过来的文章
+  const docKeyRef = useRef(docKey);
+  docKeyRef.current = docKey;
   useEffect(() => {
-    let r: Post;
-    if (type == "post")
-      slug
-        ? getPostBySlug(slug!).then((res) => {
-            if (res) {
-              r = res;
-              setCurrentPostInfo(res);
-              setDirty(false);
-            }
-          })
-        : 0;
-    else
-      slug
-        ? getDraftBySlug(slug!).then((res) => {
-            if (res) {
-              r = res;
-              setCurrentPostInfo(res);
-              setDirty(false);
-            }
-          })
-        : 0;
+    let alive = true;
+    setLoadedKey("");
+    setDirty(false);
+    if (slug) {
+      const loading =
+        type == "post" ? getPostBySlug(slug) : getDraftBySlug(slug);
+      loading.then((res) => {
+        if (!alive) return;
+        setCurrentPostInfo(res);
+        setLoadedKey(docKey);
+      });
+    }
     const saveHandler = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.key == "s") {
         e.preventDefault();
@@ -99,10 +98,11 @@ export default function Edit() {
     window.addEventListener("keydown", saveHandler);
     window.addEventListener("beforeunload", quitHandler);
     return () => {
+      alive = false;
       window.removeEventListener("keydown", saveHandler);
       window.removeEventListener("beforeunload", quitHandler);
     };
-  }, [type, slug, updated]);
+  }, [type, slug]);
   return (
     <>
       <h2>编辑文章</h2>
@@ -136,14 +136,11 @@ export default function Edit() {
                   "success"
                 );
               };
-              console.log(vditorRef.current?.getMarkdown());
+              const markdown = vditorRef.current?.getMarkdown() ?? "";
+              // 保存期间可能已经切走，回包只对原来那篇生效
+              const targetKey = docKey;
               if (type == "post") {
-                if (
-                  await updatePostMarkdown(
-                    vditorRef.current?.getMarkdown()!,
-                    slug!
-                  )
-                ) {
+                if (await updatePostMarkdown(markdown, slug!)) {
                   const newTime = moment().unix();
                   if (
                     await updatePostInfo({
@@ -151,24 +148,21 @@ export default function Edit() {
                       lastUpdatedTime: newTime,
                     })
                   ) {
-                    setCurrentPostInfo((prev) => ({
-                      ...prev,
-                      lastUpdatedTime: newTime,
-                    }));
                     success();
-                    setDirty(false);
-                    setUpdated(updated + 1);
+                    if (docKeyRef.current === targetKey) {
+                      setCurrentPostInfo((prev) => ({
+                        ...prev,
+                        mdContent: markdown,
+                        lastUpdatedTime: newTime,
+                      }));
+                      setDirty(false);
+                    }
                   } else failed();
                 } else {
                   failed();
                 }
               } else if (type == "draft") {
-                if (
-                  await updateDraftMarkdown(
-                    vditorRef.current?.getMarkdown()!,
-                    slug!
-                  )
-                ) {
+                if (await updateDraftMarkdown(markdown, slug!)) {
                   const newTime = moment().unix();
                   if (
                     await updateDraftInfo({
@@ -176,12 +170,15 @@ export default function Edit() {
                       lastUpdatedTime: newTime,
                     })
                   ) {
-                    setCurrentPostInfo((prev) => ({
-                      ...prev,
-                      lastUpdatedTime: newTime,
-                    }));
                     success();
-                    setDirty(false);
+                    if (docKeyRef.current === targetKey) {
+                      setCurrentPostInfo((prev) => ({
+                        ...prev,
+                        mdContent: markdown,
+                        lastUpdatedTime: newTime,
+                      }));
+                      setDirty(false);
+                    }
                   } else failed();
                 } else {
                   failed();
@@ -352,7 +349,7 @@ export default function Edit() {
         </div>
       </div>
       <div id="editpost-main">
-        {currentPostInfo.title ? (
+        {loaded && currentPostInfo.title ? (
           <>
             <div id="editpost-main-topline">
               <Label id="editpost-main-title">{currentPostInfo.title}</Label>
@@ -393,39 +390,39 @@ export default function Edit() {
                         ...editPostDialogState,
                         open: false,
                       });
-                      if (postn != currentPostInfo)
-                        if (type == "post")
-                          updatePostInfo(postn).then((res) => {
-                            if (res) {
-                              messageBarRef.current?.addMessage(
-                                "提示",
-                                "修改成功",
-                                "success"
-                              );
-                              setUpdated(updated + 1);
-                            } else
-                              messageBarRef.current?.addMessage(
-                                "提示",
-                                "修改失败",
-                                "error"
-                              );
-                          });
-                        else
-                          updateDraftInfo(postn).then((res) => {
-                            if (res) {
-                              messageBarRef.current?.addMessage(
-                                "提示",
-                                "修改成功",
-                                "success"
-                              );
-                              setUpdated(updated + 1);
-                            } else
-                              messageBarRef.current?.addMessage(
-                                "提示",
-                                "修改失败",
-                                "error"
-                              );
-                          });
+                      // 只把 meta 写回本地状态，不再重新拉整篇：
+                      // 旧实现靠 setUpdated 触发重取，重取回来的 mdContent 会覆盖编辑器，
+                      // 正在编辑、尚未保存的正文就被强制回滚了。
+                      const targetKey = docKey;
+                      const savingInfo =
+                        type == "post"
+                          ? updatePostInfo(postn)
+                          : updateDraftInfo(postn);
+                      savingInfo.then((res) => {
+                        if (res) {
+                          messageBarRef.current?.addMessage(
+                            "提示",
+                            "修改成功",
+                            "success"
+                          );
+                          if (docKeyRef.current !== targetKey) return;
+                          setCurrentPostInfo((prev) => ({
+                            ...prev,
+                            ...postn,
+                            // 正文以编辑器/本地为准，meta 保存不碰它
+                            mdContent: prev.mdContent,
+                            // 时间用弹窗里手填的值；没填就保持原样，不偷偷改成“现在”
+                            publishTime: postn.publishTime ?? prev.publishTime,
+                            lastUpdatedTime:
+                              postn.lastUpdatedTime ?? prev.lastUpdatedTime,
+                          }));
+                        } else
+                          messageBarRef.current?.addMessage(
+                            "提示",
+                            "修改失败",
+                            "error"
+                          );
+                      });
                     },
                   });
                 }}
@@ -444,7 +441,11 @@ export default function Edit() {
           <>加载中...</>
         )}
         <Vditor
-          content={currentPostInfo.mdContent}
+          // 换文章/换类型时重建编辑器，正文由新的 key 重新挂载写入；
+          // 同一篇内（改 meta、保存）绝不重建，避免覆盖未保存的正文
+          key={docKey}
+          // 数据还没对上当前文章时不给正文，防止把上一篇写进新编辑器
+          content={loaded ? currentPostInfo.mdContent : undefined}
           onChange={() => setDirty(true)}
           ref={vditorRef}
         />

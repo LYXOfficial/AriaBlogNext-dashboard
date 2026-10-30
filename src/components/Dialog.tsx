@@ -20,6 +20,7 @@ import { getCategories, getTags, getCachedPostSummary, regeneratePostSummary } f
 import { ArrowUploadRegular, Dismiss12Regular, ArrowSyncRegular } from "@fluentui/react-icons";
 import { uploadImage } from "@/utils/image";
 import mime from "mime";
+import moment from "moment";
 
 export declare interface BaseDialogProps{
   title:string,
@@ -77,10 +78,21 @@ export const EditPostDialog=(
   const [summaryBusy,setSummaryBusy]=useState(false);
   const [summaryHint,setSummaryHint]=useState("");
   const [summaryError,setSummaryError]=useState(false);
+  // 时间用 datetime-local 的本地时间字符串保存，提交时再转 unix 秒
+  const [publishTimeText,setPublishTimeText]=useState("");
+  const [lastUpdatedTimeText,setLastUpdatedTimeText]=useState("");
   const imageTypes=["image/png","image/jpeg","image/gif","image/webp","image/bmp","image/x-icon"];
   const uploadImageRef=useRef<HTMLInputElement>(null);
+  // 留空 = 保持原值：不能用 0 顶掉后端已有时间；格式不对也按未填处理
+  const parseTimeInput=(text:string)=>{
+    if(!text) return undefined;
+    const time=moment(text,"YYYY-MM-DDTHH:mm",true);
+    return time.isValid()?time.unix():undefined;
+  };
   useEffect(()=>{
     setCurrentPostInfo(post);
+    setPublishTimeText(post.publishTime?moment.unix(post.publishTime).format("YYYY-MM-DDTHH:mm"):"");
+    setLastUpdatedTimeText(post.lastUpdatedTime?moment.unix(post.lastUpdatedTime).format("YYYY-MM-DDTHH:mm"):"");
     setSummaryText("");
     setSummaryHint("");
     setSummaryError(false);
@@ -139,7 +151,23 @@ export const EditPostDialog=(
   return (
     <Dialog open={open} onOpenChange={(_,data)=>data.open&&onClose()}>
       <DialogSurface id="dialog-editpost">
-        <form onSubmit={(e)=>{e.preventDefault();onConfirm(currentPostInfo)}}>
+        <form onSubmit={(e)=>{
+          e.preventDefault();
+          // datetime-local 只有分钟精度：没动过的时间原样跳过，
+          // 否则每次改 meta 都会把原来的秒数抹成 :00
+          const next:Post={...currentPostInfo};
+          const originalPublish=post.publishTime?moment.unix(post.publishTime).format("YYYY-MM-DDTHH:mm"):"";
+          if(publishTimeText!==originalPublish){
+            const publishTime=parseTimeInput(publishTimeText);
+            if(publishTime!==undefined) next.publishTime=publishTime;
+          }
+          const originalUpdated=post.lastUpdatedTime?moment.unix(post.lastUpdatedTime).format("YYYY-MM-DDTHH:mm"):"";
+          if(lastUpdatedTimeText!==originalUpdated){
+            const lastUpdatedTime=parseTimeInput(lastUpdatedTimeText);
+            if(lastUpdatedTime!==undefined) next.lastUpdatedTime=lastUpdatedTime;
+          }
+          onConfirm(next);
+        }}>
           <DialogBody>
             <DialogTitle>{title}</DialogTitle>
             <DialogContent>
@@ -414,6 +442,21 @@ export const EditPostDialog=(
                   });
                 }}
               />
+              <Label>发布时间</Label>
+              <Input
+                type="datetime-local"
+                value={publishTimeText}
+                onChange={(e)=>setPublishTimeText(e.target.value)}
+              />
+              <Label>更新时间</Label>
+              <Input
+                type="datetime-local"
+                value={lastUpdatedTimeText}
+                onChange={(e)=>setLastUpdatedTimeText(e.target.value)}
+              />
+              <span className="dialog-time-hint">
+                本地时间，留空表示保持原值；保存正文时更新时间会自动改成当前时间。
+              </span>
             </DialogContent>
             <DialogActions>
               <DialogTrigger disableButtonEnhancement>

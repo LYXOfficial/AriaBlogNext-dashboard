@@ -1,6 +1,5 @@
 import { api, qs, ApiResult } from "@/utils/api";
 import { Post } from "@/interfaces/post";
-import moment from "moment";
 
 export declare interface TagCategory {
   name: string,
@@ -94,6 +93,9 @@ export async function getTags(): Promise<TagCategory[]> {
  * 详情接口会带 mdContent（最长 140KB+），而 /posts/create、/posts/update
  * 的 body 上限是 1MB 的普通 JSON（markdown 走单独的 2MB content 接口）。
  * 直接把整篇 post 原样回传，长文发布会撞上限；后端本来也只认这些字段。
+ *
+ * publishTime / lastUpdatedTime 只在传了值时才发送（undefined 会被 JSON 丢掉），
+ * 后台因此能手动指定时间；要给未传值的调用补「现在」，由调用方自己写进 post。
  */
 function metaPayload(post: Post) {
   return {
@@ -124,7 +126,7 @@ export async function updatePostInfo(post: Post): Promise<boolean> {
   try {
     const res = await api("PUT", "/posts/update", {
       auth: true,
-      body: { ...metaPayload(post), lastUpdatedTime: moment().unix() },
+      body: metaPayload(post),
     });
     if (res.ok) return true;
     else return false;
@@ -149,7 +151,7 @@ export async function updateDraftInfo(post: Post): Promise<boolean> {
   try {
     const res = await api("PUT", "/drafts/update", {
       auth: true,
-      body: { ...metaPayload(post), lastUpdatedTime: moment().unix() },
+      body: metaPayload(post),
     });
     if (res.ok) return true;
     else return false;
