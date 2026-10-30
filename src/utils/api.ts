@@ -47,7 +47,9 @@ export async function api<T>(
     body = JSON.stringify(opts.body);
     headers["Content-Type"] = "application/json";
   }
-  const res = await fetch(`${config.backEndUrl}${path}`, { method, headers, body });
+  // 后台要的是实时数据：显式 no-store，连浏览器的 HTTP 缓存/启发式缓存都不碰。
+  // 主题色那种「可缓存」的 GET 不在这里，走的是前端 api 层。
+  const res = await fetch(`${config.backEndUrl}${path}`, { method, headers, body, cache: "no-store" });
   if (!res.ok) {
     const err = await res.json().catch(() => null);
     return {
