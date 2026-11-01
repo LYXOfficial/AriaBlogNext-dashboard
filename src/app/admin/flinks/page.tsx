@@ -666,7 +666,7 @@ export default function Flinks() {
               title={
                 isOwnHost(avatarInput)
                   ? "已经在自有图床，无需转存"
-                  : "下载这张图片并转存到本站图床"
+                  : "下载这张图片并转成 WebP 存到本站图床"
               }
               onClick={async () => {
                 if (!avatarInput.trim() || isOwnHost(avatarInput)) return;
@@ -1127,7 +1127,7 @@ export default function Flinks() {
               label={
                 isOwnHost(approveForm.avatar.trim())
                   ? "头像已在自有图床，无需转存"
-                  : "把头像转存到自有图床"
+                  : "把头像转存到自有图床（自动转成 WebP）"
               }
             />
             <div style={{ fontSize: 12, opacity: 0.7 }}>
@@ -1254,8 +1254,8 @@ export default function Flinks() {
           disabled={rehostingAll}
           title={
             imageHost
-              ? "把所有不在本站图床的头像下载后转存，无法访问的会自动跳过"
-              : "把所有不在本站图床的头像下载后转存，图片无法访问的会自动跳过"
+              ? "把所有不在本站图床的头像下载、转成 WebP 后转存，无法访问的会自动跳过"
+              : "把所有不在本站图床的头像下载、转成 WebP 后转存，图片无法访问的会自动跳过"
           }
           onClick={rehostAllAvatars}
         >
