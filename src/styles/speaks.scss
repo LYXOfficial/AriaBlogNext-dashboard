@@ -87,10 +87,10 @@
             // 表情是行内小图（插入时带 .bb-emoji），不能按正文大图铺开
             img.bb-emoji{
                 display: inline-block;
-                width: 1.8em;
-                height: 1.8em;
+                width: 2.4em;
+                height: 2.4em;
                 max-width: none;
-                vertical-align: -0.35em;
+                vertical-align: -0.45em;
                 margin: 0 1px;
             }
         }
