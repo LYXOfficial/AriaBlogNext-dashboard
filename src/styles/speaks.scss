@@ -84,6 +84,15 @@
             img{
                 max-width: 100%;
             }
+            // 表情是行内小图（插入时带 .bb-emoji），不能按正文大图铺开
+            img.bb-emoji{
+                display: inline-block;
+                width: 1.8em;
+                height: 1.8em;
+                max-width: none;
+                vertical-align: -0.35em;
+                margin: 0 1px;
+            }
         }
         &-time{
             color: var(--colorNeutralForeground4);
@@ -112,5 +121,89 @@
             -ms-border-radius: 5px;
             -o-border-radius: 5px;
         }
+    }
+}
+/* 说说表情选择器：数据来自博客 /owo.json，和 twikoo 的 OwO 是同一份 */
+.speaks-emoji-picker{
+    width: 356px;
+    max-width: calc(100vw - 32px);
+    padding: 10px;
+    // PopoverSurface 自带 16px padding 的原子类（同权重、后注入），
+    // 用双类选择器把间距和盒模型定回来，否则窄屏会撑出视口
+    &.speaks-emoji-picker{
+        box-sizing: border-box;
+        padding: 10px;
+    }
+    &-tabs{
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+        margin-bottom: 6px;
+        border-bottom: 1px solid var(--colorNeutralStroke2);
+        scrollbar-width: thin;
+    }
+    &-tab{
+        flex: 0 0 auto;
+        border: none;
+        background: transparent;
+        color: var(--colorNeutralForeground2);
+        font-size: 12px;
+        line-height: 18px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        cursor: pointer;
+        white-space: nowrap;
+        &:hover{
+            background: var(--colorNeutralBackground1Hover);
+        }
+        &[aria-selected="true"]{
+            background: var(--colorBrandBackground2);
+            color: var(--colorBrandForeground2);
+        }
+    }
+    &-grid{
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 4px;
+        max-height: 248px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        // 颜文字长短不一，三列才好认
+        &-text{
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+    &-item{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 34px;
+        padding: 2px;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--colorNeutralForeground1);
+        font-size: 11px;
+        line-height: 1.2;
+        overflow: hidden;
+        cursor: pointer;
+        &:hover{
+            background: var(--colorNeutralBackground1Hover);
+        }
+        img{
+            max-width: 100%;
+            max-height: 30px;
+            object-fit: contain;
+        }
+        span{
+            word-break: break-all;
+        }
+    }
+    &-tip{
+        padding: 4px 2px;
+        font-size: 12px;
+        color: var(--colorNeutralForeground3);
     }
 }

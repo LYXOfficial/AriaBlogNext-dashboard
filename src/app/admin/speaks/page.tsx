@@ -18,6 +18,7 @@ import 'ace-builds/src-noconflict/theme-xcode';
 import 'ace-builds/src-noconflict/theme-one_dark';
 import 'ace-builds/src-noconflict/ext-language_tools';
 import { uploadImage } from "@/utils/image";
+import { SpeaksEmojiPicker } from "@/components/SpeaksEmojiPicker";
 import React from "react";
 const imageTypes=["image/png","image/jpeg","image/gif","image/webp","image/jpg"];
 function BBItem({item,deleteHandler,saveHandler,pasteHandler,dropHandler,uploadWithTip,updated}:{item:BB,deleteHandler:()=>void,saveHandler:(content:string)=>void,pasteHandler:(editorRef:RefObject<AceEditor>,event:ClipboardEvent)=>void,dropHandler:(editorRef:RefObject<AceEditor>,event:DragEvent)=>void,uploadWithTip:(file:File)=>Promise<string>,updated:number}):ReactElement{
@@ -30,6 +31,13 @@ function BBItem({item,deleteHandler,saveHandler,pasteHandler,dropHandler,uploadW
   // dragover 不 preventDefault 的话浏览器会把文件当页面打开；只拦文件类拖拽
   const handleDragOver=(e:DragEvent)=>{if(e.dataTransfer?.types?.includes("Files"))e.preventDefault()};
   const uploadImageInputRef=useRef<HTMLInputElement>(null);
+  // 表情插到 Ace 光标处；插完把焦点还给编辑器，面板不主动关，方便连着点几个
+  const insertEmoji=(markup:string)=>{
+    const editor=aceEditorRef.current?.editor;
+    if(!editor) return;
+    editor.insert(markup);
+    editor.focus();
+  };
   const [isLight,setIsLight]=useState(true);
   useEffect(()=>{
     const mediaQuery=window.matchMedia("(prefers-color-scheme:light)");
@@ -117,6 +125,7 @@ function BBItem({item,deleteHandler,saveHandler,pasteHandler,dropHandler,uploadW
             }}
             title="上传图片"
           />
+          <SpeaksEmojiPicker onInsert={insertEmoji}/>
           <Button
             icon={<LinkRegular/>}
             size="small"
@@ -249,6 +258,13 @@ function NewBBItem({item,saveHandler,pasteHandler,dropHandler,uploadWithTip}:{it
   const handleDrop=(e:DragEvent)=>{dropHandler(aceEditorRef,e)};
   const handleDragOver=(e:DragEvent)=>{if(e.dataTransfer?.types?.includes("Files"))e.preventDefault()};
   const uploadImageInputRef=useRef<HTMLInputElement>(null);
+  // 表情插到 Ace 光标处；插完把焦点还给编辑器，面板不主动关，方便连着点几个
+  const insertEmoji=(markup:string)=>{
+    const editor=aceEditorRef.current?.editor;
+    if(!editor) return;
+    editor.insert(markup);
+    editor.focus();
+  };
   const [isLight,setIsLight]=useState(true);
   useEffect(()=>{
     setTimeout(()=>aceEditorRef.current?.editor?.focus(),10);
@@ -316,6 +332,7 @@ function NewBBItem({item,saveHandler,pasteHandler,dropHandler,uploadWithTip}:{it
             }}
             title="上传图片"
           />
+          <SpeaksEmojiPicker onInsert={insertEmoji}/>
           <Button
             icon={<LinkRegular/>}
             size="small"
