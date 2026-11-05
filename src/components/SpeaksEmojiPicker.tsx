@@ -61,19 +61,34 @@ type ParsedEmoji = {
   markup: string;
 };
 
+/**
+ * owo.json 里有 77 条把 `https://` 写成了 `https:/`（单斜杠）。
+ *
+ * 不能直接 `new URL(src, window.location.origin)`：当 base 也是 https 时，
+ * 单斜杠会被当成相对路径，拼成 `https://<后台域名>/testingcf.jsdelivr.net/...`
+ * 然后 404。本地 dev 是 http 页面，scheme 不同反而走绝对解析、看不出问题，
+ * 所以这里先把协议补成双斜杠，再按绝对地址解析。
+ */
+function normalizeEmojiSrc(raw: string): string {
+  const src = raw.trim().replace(/^(https?):\/(?!\/)/i, "$1://");
+  try {
+    return new URL(src).href;
+  } catch {
+    // 兜底：万一以后出现站内相对路径，再按当前站点补全
+    try {
+      return new URL(src, window.location.origin).href;
+    } catch {
+      return src;
+    }
+  }
+}
+
 function parseEmoji(item: OwoItem): ParsedEmoji | null {
   const icon = item.icon ?? "";
   const label = item.text ?? "";
   const img = icon.match(IMG_SRC_RE);
   if (img) {
-    // owo.json 里有几十条把 https:// 写成了 https:/（历史数据），
-    // 浏览器能照常显示，但直接插进 content 会存下不规范地址；先按 URL 解析归一化。
-    let src = img[1];
-    try {
-      src = new URL(src, window.location.origin).href;
-    } catch {
-      // 解析不了就按原文插入，至少和图库里看到的一致
-    }
+    const src = normalizeEmojiSrc(img[1]);
     return {
       label,
       kind: "image",
